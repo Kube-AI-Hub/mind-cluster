@@ -48,8 +48,10 @@ type NPUHandler struct {
 
 const (
 	nodeWeight          = 100.0
-	networkUnhealthyNPU = util.HwPreName + util.Ascend910 + "-NetworkUnhealthy"
-	unHealthyNPU        = util.HwPreName + util.Ascend910 + "-Unhealthy"
+	networkUnhealthy910 = util.HwPreName + util.Ascend910 + "-NetworkUnhealthy"
+	unHealthy910        = util.HwPreName + util.Ascend910 + "-Unhealthy"
+	networkUnhealthyNPU = util.NPUCardName + "-NetworkUnhealthy"
+	unHealthyNPU        = util.NPUCardName + "-Unhealthy"
 )
 
 const (

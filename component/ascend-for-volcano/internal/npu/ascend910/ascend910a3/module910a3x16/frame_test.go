@@ -504,6 +504,7 @@ func TestScoreBestNPUNodes(t *testing.T) {
 			defer reqNPUNumPatch.Reset()
 			tp.Nodes = tt.plgNodes
 			tp.NPUJob = &util.NPUJob{NPUTaskNum: 2}
+			tp.ReqNPUName = util.NPU910CardName // set ReqNPUName
 			if err := tp.ScoreBestNPUNodes(tt.task, tt.apiNodes, tt.score); (err != nil) != tt.wantErr {
 				t.Errorf("ScoreBestNPUNodes() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -567,6 +568,7 @@ func TestSelectNPUFromNode(t *testing.T) {
 				func(_ *base.NPUHandler, task *api.TaskInfo) (int, error) { return tt.taskNPUNum, nil })
 			defer reqNPUNumPatch.Reset()
 			tp.NPUJob = &util.NPUJob{NPUTaskNum: tt.npuTaskNum}
+			tp.ReqNPUName = util.NPU910CardName // set ReqNPUName
 			node := plugin.NPUNode{}
 			node.Annotation = map[string]string{}
 			if len(tt.idleCards) != 0 {

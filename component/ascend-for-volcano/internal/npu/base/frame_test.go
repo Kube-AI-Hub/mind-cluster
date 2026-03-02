@@ -525,21 +525,21 @@ func buildFakeScheduleEnv() plugin.ScheduleEnv {
 						Name: "node1",
 						Annotation: map[string]string{
 							util.NPU910CardName: "Ascend910-0,Ascend910-1,Ascend910-2,Ascend910-3,Ascend910-4",
-							unHealthyNPU:        "Ascend910-5"},
+							unHealthy910:        "Ascend910-5"},
 					},
 				},
 				"node2": {
 					CommonNode: plugin.CommonNode{
 						Annotation: map[string]string{
 							util.NPU910CardName: "Ascend910-0,Ascend910-1,Ascend910-2,Ascend910-3,Ascend910-4",
-							unHealthyNPU:        "Ascend910-5,Ascend910-6",
+							unHealthy910:        "Ascend910-5,Ascend910-6",
 						},
 					},
 				},
 				"node3": {
 					CommonNode: plugin.CommonNode{
 						Annotation: map[string]string{util.NPU910CardName: "Ascend910-0,Ascend910-1,Ascend910-2," +
-							"Ascend910-3,Ascend910-4,Ascend910-5", unHealthyNPU: "Ascend910-6,Ascend910-7",
+							"Ascend910-3,Ascend910-4,Ascend910-5", unHealthy910: "Ascend910-6,Ascend910-7",
 						},
 					},
 				},

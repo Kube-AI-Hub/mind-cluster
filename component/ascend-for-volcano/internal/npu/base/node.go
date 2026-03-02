@@ -63,9 +63,20 @@ func (tp *NPUHandler) GetUsableTopFromNode(node plugin.NPUNode, disFlag bool) ([
 }
 
 func (tp *NPUHandler) getNetUnhealthyNPU(node plugin.NPUNode) ([]int, error) {
-	networkUnhealthyTopStr, ok := node.Annotation[networkUnhealthyNPU]
+	var annokey string
+	if tp.ReqNPUName == "" {
+		err := fmt.Errorf("reqNPUName is empty")
+		klog.V(util.LogWarningLev).Infof("%s getNetUnhealthyNPU err: %s", tp.GetPluginName(), err.Error())
+		return nil, err
+	}
+	if tp.ReqNPUName == util.NPUCardName {
+		annokey = networkUnhealthyNPU
+	} else {
+		annokey = networkUnhealthy910
+	}
+	networkUnhealthyTopStr, ok := node.Annotation[annokey]
 	if !ok {
-		err := fmt.Errorf("node<%s> don't have resource<%s>", node.Name, networkUnhealthyNPU)
+		err := fmt.Errorf("node<%s> don't have resource<%s>", node.Name, annokey)
 		klog.V(util.LogWarningLev).Infof("%s getUsableTopFromNode err: %s", tp.GetPluginName(), err.Error())
 		return nil, err
 	}
@@ -74,9 +85,20 @@ func (tp *NPUHandler) getNetUnhealthyNPU(node plugin.NPUNode) ([]int, error) {
 }
 
 func (tp *NPUHandler) getUnhealthyNPU(node plugin.NPUNode) []int {
-	unhealthyTopStr, ok := node.Annotation[unHealthyNPU]
+	var annokey string
+	if tp.ReqNPUName == "" {
+		err := fmt.Errorf("reqNPUName is empty")
+		klog.V(util.LogWarningLev).Infof("%s getUnhealthyNPU err: %s", tp.GetPluginName(), err.Error())
+		return nil
+	}
+	if tp.ReqNPUName == util.NPUCardName {
+		annokey = unHealthyNPU
+	} else {
+		annokey = unHealthy910
+	}
+	unhealthyTopStr, ok := node.Annotation[annokey]
 	if !ok {
-		klog.V(util.LogDebugLev).Infof("node<%s> don't have resource<%s>", node.Name, unHealthyNPU)
+		klog.V(util.LogDebugLev).Infof("node<%s> don't have resource<%s>", node.Name, annokey)
 		return make([]int, 0)
 	}
 	unhealthyTop := util.ChangeTopToIntArray(unhealthyTopStr, tp.GetAnnoPreVal(tp.ReqNPUName))
