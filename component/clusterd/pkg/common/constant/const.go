@@ -388,6 +388,8 @@ const (
 	RankZeroNodeId = "0"
 	// PodRankIndexAnno annotation value is rank index of the pod
 	PodRankIndexAnno = "hccl/rankIndex"
+	// CheckCtlStateTimes check control state times
+	CheckCtlStateTimes = 10
 )
 
 const (
