@@ -63,15 +63,17 @@ func (tp *NPUHandler) SetNPUTopologyToPodFn(task *api.TaskInfo, top []int, node 
 	if tp == nil || task == nil || task.Pod == nil || task.Pod.Annotations == nil || len(top) == 0 {
 		return
 	}
+	convertedTop := make([]int, len(top))
+	copy(convertedTop, top)
 	chipName, ok := node.Label[plugin.ChipTypeKey]
 	if ok && strings.HasPrefix(chipName, plugin.Ascend950Prefix) {
 		if node.PhyIDToDeviceIDMap != nil && len(node.PhyIDToDeviceIDMap) > 0 {
 			for i, phyID := range top {
-				top[i] = int(node.PhyIDToDeviceIDMap[int32(phyID)])
+				convertedTop[i] = int(node.PhyIDToDeviceIDMap[int32(phyID)])
 			}
 		}
 	}
-	topologyStr := util.ChangeIntArrToStr(top, tp.GetAnnoPreVal(tp.ReqNPUName))
+	topologyStr := util.ChangeIntArrToStr(convertedTop, tp.GetAnnoPreVal(tp.ReqNPUName))
 	task.Pod.Annotations[tp.GetAnnoName(tp.ReqNPUName)] = topologyStr
 	// to device-plugin judge pending pod.
 	tmp := strconv.FormatInt(time.Now().UnixNano(), util.Base10)
