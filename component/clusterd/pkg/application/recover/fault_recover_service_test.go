@@ -1133,3 +1133,26 @@ func TestGetFaultAndFaultNodes(t *testing.T) {
 		convey.So(faultNodes[0], convey.ShouldEqual, "node1")
 	})
 }
+
+func TestSleepForStateChange(t *testing.T) {
+	convey.Convey("Test sleepForStateChange", t, func() {
+		svr := &FaultRecoverService{}
+		convey.Convey("01-controller state is nil", func() {
+			ctl := &EventController{}
+			svr.sleepForStateChange(ctl)
+			convey.So(true, convey.ShouldBeTrue)
+		})
+		convey.Convey("02-controller state is not InitState", func() {
+			fsm := common.NewStateMachine(common.NotifyStopTrainState, nil)
+			ctl := &EventController{state: fsm}
+			svr.sleepForStateChange(ctl)
+			convey.So(true, convey.ShouldBeTrue)
+		})
+		convey.Convey("03-controller state is InitState", func() {
+			fsm := common.NewStateMachine(common.InitState, nil)
+			ctl := &EventController{state: fsm}
+			svr.sleepForStateChange(ctl)
+			convey.So(true, convey.ShouldBeTrue)
+		})
+	})
+}

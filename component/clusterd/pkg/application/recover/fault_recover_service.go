@@ -171,14 +171,43 @@ func (s *FaultRecoverService) notifyFaultInfoForJob(faultInfo constant.JobFaultI
 	onlyRetryFault, supportRetry := s.getRetryStatus(addedFaults, controller)
 	removeGrpcFault, faultNodes := s.getFaultAndFaultNodes(addedFaultRanks, controller)
 	if !supportRetry || !onlyRetryFault && len(faultNodes) > 0 {
+		s.sleepForStateChange(controller)
 		s.sendPreExitSignal(controller, removeGrpcFault, faultNodes)
 		return
 	}
 	controller.addEvent(common.FaultOccurEvent)
 }
 
+func (s *FaultRecoverService) sleepForStateChange(controller *EventController) {
+	for i := 0; i < constant.CheckCtlStateTimes; i++ {
+		if controller.state != nil && controller.state.GetState() == common.InitState {
+			time.Sleep(time.Second)
+		}
+	}
+}
+
 func (s *FaultRecoverService) sendPreExitSignal(controller *EventController,
 	removeGrpcFault []*pb.FaultRank, faultNodes []string) {
+	var sendPodRanks []string
+	podsInJob := pod.GetPodByJobId(controller.jobInfo.JobId)
+	for _, podId := range faultNodes {
+		prePodUID, exists := controller.originPod[podId]
+		if !exists {
+			hwlog.RunLog.Debugf("sendPreExitSignal jobId=%s, pod %s not exist", controller.jobInfo.JobId, podId)
+			continue
+		}
+		currentPod := pod.GetPodByRankIndexInPods(podId, podsInJob)
+		if string(currentPod.UID) != prePodUID {
+			hwlog.RunLog.Debugf("jobId=%s, pod %s has changed, original UID: %s, current UID: %s",
+				controller.jobInfo.JobId, podId, prePodUID, currentPod.UID)
+			continue
+		}
+		sendPodRanks = append(sendPodRanks, podId)
+	}
+	hwlog.RunLog.Infof("sendPreExitSignal jobId=%s, sendPodRanks=%v", controller.jobInfo.JobId, sendPodRanks)
+	if len(sendPodRanks) == 0 {
+		return
+	}
 	signal := &pb.ProcessManageSignal{
 		Uuid:           common.NewEventId(randomLen),
 		JobId:          controller.jobInfo.JobId,
@@ -186,7 +215,7 @@ func (s *FaultRecoverService) sendPreExitSignal(controller *EventController,
 		Actions:        preExitProcessActions,
 		ChangeStrategy: "",
 		FaultRanks:     removeGrpcFault,
-		NodeRankIds:    faultNodes,
+		NodeRankIds:    sendPodRanks,
 	}
 	controller.signalEnqueue(signal)
 }
