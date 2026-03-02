@@ -117,11 +117,11 @@ func getResourceNamePrefix(oldName string) string {
 }
 
 // getResourceNamePrefixInner get resource name prefix by device type for inner use
-func getResourceNamePrefixInner(oldName string) string {
+func getResourceNamePrefixInner(oldName string, devName DevName) string {
 	if oldDeviceTypes[common.ParamOption.RealCardType] {
-		return oldName
+		return strings.ReplaceAll(oldName, devName.DevicePublicNamePre, devName.OldDevicePublicNamePre)
 	}
-	return strings.ReplaceAll(oldName, api.AscendMinuxPrefix, api.Ascend910MinuxPrefix)
+	return strings.ReplaceAll(oldName, devName.DevicePublicNamePre, api.AscendMinuxPrefix)
 }
 
 // getPodAnnotationWithPublicName get pod annotation with public name
@@ -160,17 +160,12 @@ func ReplaceDevicePublicName(resourceType string, oldName string) string {
 // ReplaceDeviceInnerName replace device name with inner name
 func ReplaceDeviceInnerName(resourceType string, oldNames []string) []string {
 	devName := devNameMap[resourceType]
-	if len(devName.DevicePublicNamePre) == 0 || common.ParamOption.RealCardType == api.Ascend910A5 {
-		newNames := make([]string, 0, len(oldNames))
-		for _, oldName := range oldNames {
-			newName := getResourceNamePrefixInner(oldName)
-			newNames = append(newNames, newName)
-		}
-		return newNames
+	if len(devName.DevicePublicNamePre) == 0 {
+		return oldNames
 	}
 	newNames := make([]string, 0, len(oldNames))
 	for _, oldName := range oldNames {
-		newName := strings.ReplaceAll(oldName, devName.DevicePublicNamePre, devName.OldDevicePublicNamePre)
+		newName := getResourceNamePrefixInner(oldName, devName)
 		newNames = append(newNames, newName)
 	}
 	return newNames

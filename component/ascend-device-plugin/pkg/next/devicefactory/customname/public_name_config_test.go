@@ -487,11 +487,16 @@ func TestGetResourceNamePrefixInner(t *testing.T) {
 	originalRealCardType := common.ParamOption.RealCardType
 	defer func() { common.ParamOption.RealCardType = originalRealCardType }()
 
+	devName := DevName{
+		DevicePublicNamePre:    api.AscendMinuxPrefix,
+		OldDevicePublicNamePre: api.Ascend910MinuxPrefix,
+	}
+
 	common.ParamOption.RealCardType = api.Ascend910A5
-	result := getResourceNamePrefixInner(api.AscendMinuxPrefix)
-	assert.Equal(t, api.Ascend910MinuxPrefix, result, "for new device type, prefix should be replaced to Ascend910MinuxPrefix")
+	result := getResourceNamePrefixInner(api.AscendMinuxPrefix+"0", devName)
+	assert.Equal(t, api.AscendMinuxPrefix+"0", result, "for new device type, prefix should remain AscendMinuxPrefix")
 
 	common.ParamOption.RealCardType = api.Ascend910A
-	result = getResourceNamePrefixInner(api.AscendMinuxPrefix)
-	assert.Equal(t, api.AscendMinuxPrefix, result, "for old device type, prefix should remain unchanged")
+	result = getResourceNamePrefixInner(api.AscendMinuxPrefix+"0", devName)
+	assert.Equal(t, api.Ascend910MinuxPrefix+"0", result, "for old device type, prefix should be replaced to OldDevicePublicNamePre")
 }
