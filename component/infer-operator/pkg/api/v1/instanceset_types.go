@@ -29,16 +29,17 @@ type WorkloadType struct {
 	APIVersion string `json:"apiVersion,omitempty"`
 }
 
-// WorkloadObjectMeta defines the metadata of the workload
-type WorkloadObjectMeta struct {
+// ObjectMeta defines the metadata of the workload
+type ObjectMeta struct {
 	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // ServiceSpec defines the desired state of Service
 type ServiceSpec struct {
-	Name string             `json:"name,omitempty"`
-	Spec corev1.ServiceSpec `json:"spec,omitempty"`
+	Name        string             `json:"name,omitempty"`
+	ServiceMeta ObjectMeta         `json:"metadata,omitempty"`
+	Spec        corev1.ServiceSpec `json:"spec,omitempty"`
 }
 
 // InstanceSetSpec defines the desired state of InstanceSet
@@ -47,7 +48,7 @@ type InstanceSetSpec struct {
 	Replicas           *int32               `json:"replicas,omitempty"`
 	Services           []ServiceSpec        `json:"services,omitempty"`
 	WorkloadTypeMeta   WorkloadType         `json:"workload,omitempty"`
-	WorkloadObjectMeta WorkloadObjectMeta   `json:"metadata,omitempty"`
+	WorkloadObjectMeta ObjectMeta           `json:"metadata,omitempty"`
 	InstanceSpec       runtime.RawExtension `json:"spec,omitempty"`
 }
 
