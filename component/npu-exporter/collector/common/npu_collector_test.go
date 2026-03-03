@@ -53,6 +53,7 @@ const (
 	mockValue         = "mockValue"
 
 	// Test constants for setElabelInfo
+	testLogicID          = int32(1)
 	testCardID           = int32(1)
 	testProductName      = "Atlas 900"
 	testModel            = "Atlas-900-9000"
@@ -476,7 +477,10 @@ func TestSetPCIeBusInfo(t *testing.T) {
 
 type setElabelInfoTestCase struct {
 	name                   string
-	cardID                 int32
+	logicID                int32
+	mockCardID             int32
+	mockDeviceID           int32
+	mockCardIDErr          error
 	mockElabelInfo         common.ElabelInfo
 	mockError              error
 	expectSerial           string
@@ -488,34 +492,68 @@ type setElabelInfoTestCase struct {
 
 func createSetElabelInfoTestCases() []setElabelInfoTestCase {
 	return []setElabelInfoTestCase{
-		{
-			name:   "should set elabel info successfully when GetCardElabelV2 returns valid data",
-			cardID: testCardID,
-			mockElabelInfo: common.ElabelInfo{
-				ProductName:      testProductName,
-				Model:            testModel,
-				Manufacturer:     testManufacturer,
-				ManufacturerDate: testManufacturerDate,
-				SerialNumber:     testSerialNumber,
-			},
-			mockError:              nil,
-			expectSerial:           testSerialNumber,
-			expectProduct:          testProductName,
-			expectModel:            testModel,
-			expectManufacturer:     testManufacturer,
-			expectManufacturerDate: testManufacturerDate,
+		createA3ValidCase(),
+		createA3ErrorCase(),
+		createA5LogicIDCase(),
+	}
+}
+
+func createA3ValidCase() setElabelInfoTestCase {
+	return setElabelInfoTestCase{
+		name:          "A3: should set elabel info successfully when GetCardElabelV2 returns valid data",
+		logicID:       testLogicID,
+		mockCardID:    testCardID,
+		mockDeviceID:  0,
+		mockCardIDErr: nil,
+		mockElabelInfo: common.ElabelInfo{
+			ProductName:      testProductName,
+			Model:            testModel,
+			Manufacturer:     testManufacturer,
+			ManufacturerDate: testManufacturerDate,
+			SerialNumber:     testSerialNumber,
 		},
-		{
-			name:                   "should set default elabel info when GetCardElabelV2 returns error",
-			cardID:                 testCardID,
-			mockElabelInfo:         common.ElabelInfo{},
-			mockError:              testError,
-			expectSerial:           testDefaultSerial,
-			expectProduct:          "",
-			expectModel:            "",
-			expectManufacturer:     "",
-			expectManufacturerDate: "",
+		mockError:              nil,
+		expectSerial:           testSerialNumber,
+		expectProduct:          testProductName,
+		expectModel:            testModel,
+		expectManufacturer:     testManufacturer,
+		expectManufacturerDate: testManufacturerDate,
+	}
+}
+
+func createA3ErrorCase() setElabelInfoTestCase {
+	return setElabelInfoTestCase{
+		name:                   "A3: should set default elabel info when GetCardElabelV2 returns error",
+		logicID:                testLogicID,
+		mockCardID:             testCardID,
+		mockDeviceID:           0,
+		mockCardIDErr:          nil,
+		mockElabelInfo:         common.ElabelInfo{},
+		mockError:              testError,
+		expectSerial:           testDefaultSerial,
+		expectProduct:          "",
+		expectModel:            "",
+		expectManufacturer:     "",
+		expectManufacturerDate: "",
+	}
+}
+
+func createA5LogicIDCase() setElabelInfoTestCase {
+	return setElabelInfoTestCase{
+		name:          "A5: should set elabel info using logicID when GetCardIDDeviceID not supported",
+		logicID:       testLogicID,
+		mockCardID:    -1,
+		mockDeviceID:  -1,
+		mockCardIDErr: testError,
+		mockElabelInfo: common.ElabelInfo{
+			SerialNumber: testSerialNumber,
 		},
+		mockError:              nil,
+		expectSerial:           testSerialNumber,
+		expectProduct:          "",
+		expectModel:            "",
+		expectManufacturer:     "",
+		expectManufacturerDate: "",
 	}
 }
 
@@ -523,18 +561,20 @@ func executeSetElabelInfoTest(tc setElabelInfoTestCase) {
 	// Create mock device manager
 	mockDmgr := &devmanager.DeviceManager{}
 
-	// Create test chip
-	chip := &HuaWeiAIChip{}
+	chip := &HuaWeiAIChip{LogicID: tc.logicID}
 
 	// Apply gomonkey patches
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 
+	patches.ApplyMethodReturn(mockDmgr, "GetCardIDDeviceID",
+		tc.mockCardID, tc.mockDeviceID, tc.mockCardIDErr)
+
 	patches.ApplyMethodReturn(mockDmgr, "GetCardElabelV2",
 		tc.mockElabelInfo, tc.mockError)
 
 	// Execute the function under test
-	setElabelInfo(chip, mockDmgr, tc.cardID)
+	setElabelInfo(chip, mockDmgr)
 
 	// Verify results
 	convey.So(chip.ElabelInfo, convey.ShouldNotBeNil)
@@ -557,8 +597,7 @@ func TestSetElabelInfo(t *testing.T) {
 type saveToCacheTestCase struct {
 	name      string
 	domain    string
-	cardID    int32
-	deviceID  int32
+	logicID   int32
 	value     interface{}
 	expectKey string
 }
@@ -568,26 +607,23 @@ func createSaveToCacheTestCases() []saveToCacheTestCase {
 		{
 			name:      "should save value to cache when domain cardID and deviceID are valid",
 			domain:    testDomainProductType,
-			cardID:    testCardIDForCache,
-			deviceID:  testDeviceIDForCache,
+			logicID:   testLogicID,
 			value:     testProductTypeValue,
-			expectKey: testDomainProductType + "23",
+			expectKey: testDomainProductType + "1",
 		},
 		{
 			name:      "should save int value to cache when value is integer",
 			domain:    testDomainOther,
-			cardID:    testCardIDForCache,
-			deviceID:  testDeviceIDForCache,
+			logicID:   testLogicID + 1,
 			value:     testValueInt,
-			expectKey: testDomainOther + "23",
+			expectKey: testDomainOther + "2",
 		},
 		{
 			name:      "should save string value to cache when value is string",
 			domain:    testDomainOther,
-			cardID:    int32(0),
-			deviceID:  int32(1),
+			logicID:   testLogicID + num2,
 			value:     testValueString,
-			expectKey: testDomainOther + "01",
+			expectKey: testDomainOther + "3",
 		},
 	}
 }
@@ -597,7 +633,7 @@ func TestSaveToCache(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			clearCache()
-			saveToCache(tc.domain, tc.cardID, tc.deviceID, tc.value)
+			saveToCache(tc.domain, tc.logicID, tc.value)
 			actualValue, ok := npuInfoCache.Load(tc.expectKey)
 			convey.Convey("should save and retrieve value correctly", t, func() {
 				convey.So(ok, convey.ShouldBeTrue)
@@ -611,8 +647,7 @@ type getFromCacheTestCase struct {
 	name        string
 	setupCache  func()
 	domain      string
-	cardID      int32
-	deviceID    int32
+	logicID     int32
 	expectValue interface{}
 	expectOk    bool
 }
@@ -623,12 +658,10 @@ func createGetFromCacheTestCases() []getFromCacheTestCase {
 			name: "should return cached value when key exists in cache",
 			setupCache: func() {
 				clearCache()
-				saveToCache(testDomainProductType, testCardIDForCache, testDeviceIDForCache,
-					testProductTypeValue)
+				saveToCache(testDomainProductType, testLogicID, testProductTypeValue)
 			},
 			domain:      testDomainProductType,
-			cardID:      testCardIDForCache,
-			deviceID:    testDeviceIDForCache,
+			logicID:     testLogicID,
 			expectValue: testProductTypeValue,
 			expectOk:    true,
 		},
@@ -638,8 +671,7 @@ func createGetFromCacheTestCases() []getFromCacheTestCase {
 				clearCache()
 			},
 			domain:      testDomainProductType,
-			cardID:      testCardIDForCache,
-			deviceID:    testDeviceIDForCache,
+			logicID:     testLogicID,
 			expectValue: nil,
 			expectOk:    false,
 		},
@@ -647,11 +679,10 @@ func createGetFromCacheTestCases() []getFromCacheTestCase {
 			name: "should return int value when cached value is integer",
 			setupCache: func() {
 				clearCache()
-				saveToCache(testDomainOther, testCardIDForCache, testDeviceIDForCache, testValueInt)
+				saveToCache(testDomainOther, testLogicID, testValueInt)
 			},
 			domain:      testDomainOther,
-			cardID:      testCardIDForCache,
-			deviceID:    testDeviceIDForCache,
+			logicID:     testLogicID,
 			expectValue: testValueInt,
 			expectOk:    true,
 		},
@@ -663,7 +694,7 @@ func TestGetFromCache(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.setupCache()
-			actualValue := getFromCache(tc.domain, tc.cardID, tc.deviceID)
+			actualValue := getFromCache(tc.domain, tc.logicID)
 			convey.Convey("should return expected value", t, func() {
 				if tc.expectOk {
 					convey.So(actualValue, convey.ShouldEqual, tc.expectValue)
@@ -682,6 +713,7 @@ type setProductTypeTestCase struct {
 	productType       string
 	productTypeErr    error
 	expectProductType string
+	logicID           int32
 }
 
 func createSetProductTypeTestCases() []setProductTypeTestCase {
@@ -690,12 +722,14 @@ func createSetProductTypeTestCases() []setProductTypeTestCase {
 			name:              "should return early when device type is not Ascend310P",
 			devType:           api.Ascend910,
 			expectProductType: "",
+			logicID:           testLogicID,
 		},
 		{
 			name:              "should set product type from cache when cache has value",
 			devType:           api.Ascend310P,
 			cacheValue:        testProductTypeValue,
 			expectProductType: testProductTypeValue,
+			logicID:           testLogicID,
 		},
 		{
 			name:              "should set product type from dmgr when cache is empty and GetProductType succeeds",
@@ -704,6 +738,7 @@ func createSetProductTypeTestCases() []setProductTypeTestCase {
 			productType:       testProductTypeValue,
 			productTypeErr:    nil,
 			expectProductType: testProductTypeValue,
+			logicID:           testLogicID,
 		},
 		{
 			name:              "should not set product type when GetProductType returns error",
@@ -712,6 +747,7 @@ func createSetProductTypeTestCases() []setProductTypeTestCase {
 			productType:       "",
 			productTypeErr:    mockErr,
 			expectProductType: "",
+			logicID:           testLogicID,
 		},
 		{
 			name:              "should set product type from dmgr when cache value is not string",
@@ -720,6 +756,7 @@ func createSetProductTypeTestCases() []setProductTypeTestCase {
 			productType:       testProductTypeValue,
 			productTypeErr:    nil,
 			expectProductType: testProductTypeValue,
+			logicID:           testLogicID,
 		},
 	}
 }
@@ -729,7 +766,7 @@ func TestSetProductType(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			clearCache()
-			chip := &HuaWeiAIChip{}
+			chip := &HuaWeiAIChip{LogicID: tc.logicID}
 			mockDmgr := &devmanager.DeviceManager{}
 			patches := gomonkey.NewPatches()
 			defer patches.Reset()
@@ -742,7 +779,7 @@ func TestSetProductType(t *testing.T) {
 				patches.ApplyMethodReturn(mockDmgr, "GetProductType", tc.productType, tc.productTypeErr)
 			}
 
-			setProductType(chip, mockDmgr, testCardIDForCache, testDeviceIDForCache)
+			setProductType(chip, mockDmgr)
 			convey.Convey("should set product type correctly", t, func() {
 				convey.So(chip.ProductType, convey.ShouldEqual, tc.expectProductType)
 			})

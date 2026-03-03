@@ -309,7 +309,12 @@ func (hdm *HwDevManager) getNpuBaseInfo() map[string]*common.NpuBaseInfo {
 	for index, dev := range hdm.allInfo.AllDevs {
 		tmpDev := dev
 		levelList := hdm.getLevelList(&tmpDev)
+		var devID *int32
+		if common.ParamOption.RealCardType == api.Ascend910A5 {
+			devID = &tmpDev.LogicID
+		}
 		ipMap[tmpDev.DeviceName] = &common.NpuBaseInfo{
+			DeviceID:      devID,
 			IP:            tmpDev.IP,
 			SuperDeviceID: tmpDev.SuperDeviceID,
 			// node baseDeviceInfo levelList -> rank table for A5

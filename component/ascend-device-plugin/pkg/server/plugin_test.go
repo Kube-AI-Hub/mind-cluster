@@ -1007,6 +1007,82 @@ func TestIsValidRequestID(t *testing.T) {
 	})
 }
 
+func TestConvertToLogicIDs(t *testing.T) {
+	allDevs := []common.NpuDevice{
+		{PhyID: 0, LogicID: 10},
+		{PhyID: 1, LogicID: 11},
+	}
+
+	tests := []struct {
+		name     string
+		devices  []int
+		expected []int
+	}{
+		{
+			name:     "all found",
+			devices:  []int{0, 1},
+			expected: []int{10, 11},
+		},
+		{
+			name:     "partially found",
+			devices:  []int{0, 2},
+			expected: []int{10},
+		},
+		{
+			name:     "none found",
+			devices:  []int{3, 4},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertToLogicIDs(tt.devices, allDevs)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("convertToLogicIDs() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetFinalVisibleDevices(t *testing.T) {
+	allInfo := common.NpuAllInfo{
+		AllDevs: []common.NpuDevice{
+			{PhyID: 0, LogicID: 100},
+		},
+	}
+
+	tests := []struct {
+		name                 string
+		realCardType         string
+		ascendVisibleDevices []int
+		expected             []int
+	}{
+		{
+			name:                 "Ascend910A5 converts to logicIDs",
+			realCardType:         api.Ascend910A5,
+			ascendVisibleDevices: []int{0},
+			expected:             []int{100},
+		},
+		{
+			name:                 "Other card type returns original",
+			realCardType:         "Ascend310",
+			ascendVisibleDevices: []int{0},
+			expected:             []int{0},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			common.ParamOption.RealCardType = tt.realCardType
+			got := getFinalVisibleDevices(tt.ascendVisibleDevices, allInfo)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("getFinalVisibleDevices() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestAddSoftShareDev(t *testing.T) {
 	convey.Convey("Test addSoftShareDev", t, func() {
 		ps := &PluginServer{}

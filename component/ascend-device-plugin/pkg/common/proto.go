@@ -316,6 +316,7 @@ type PodDeviceInfo struct {
 
 // NpuBaseInfo is the base info of npu
 type NpuBaseInfo struct {
+	DeviceID      *int32 `json:"DeviceID,omitempty"`
 	IP            string
 	SuperDeviceID uint32
 	// LevelList info for A5

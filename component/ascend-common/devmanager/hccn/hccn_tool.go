@@ -338,19 +338,19 @@ func buildHccnErr(phyID int32, msg string, err error) error {
 }
 
 // GetNPULinkStatusA5 exec "hccn_tool -g -link -i device_id -u udie_id -p port_id" to get link status
-func GetNPULinkStatusA5(phyID, udieID, portID int32) (string, error) {
-	args := []string{"-g", "-link", "-i", strconv.Itoa(int(phyID)), "-u", strconv.Itoa(int(udieID)), "-p", strconv.Itoa(int(portID))}
+func GetNPULinkStatusA5(logicID, udieID, portID int32) (string, error) {
+	args := []string{"-g", "-link", "-i", strconv.Itoa(int(logicID)), "-u", strconv.Itoa(int(udieID)), "-p", strconv.Itoa(int(portID))}
 	// command example: hccn_tool -g -link -i 58 -u 0 -p 4
 	// success result example is: link status: DOWN
 	outStr, err := getInfoFromHccnTool(args...)
 	hwlog.RunLog.Debugf("hccn_tool command: %v exec result: %v", args, outStr)
 	if err != nil {
-		return common.Abnormal, buildHccnErr(phyID, "link status", err)
+		return common.Abnormal, buildHccnErrA5("link status", err)
 	}
 	replacedStr := strings.ReplaceAll(outStr, newLine, "")
 	outArr := strings.Split(replacedStr, space)
 	if len(outArr) != linkStatusPart {
-		return common.Abnormal, buildHccnErr(phyID, "link status",
+		return common.Abnormal, buildHccnErrA5("link status",
 			fmt.Errorf("length of output %v is not equal to %v", outArr, linkStatusPart))
 	}
 
@@ -360,14 +360,14 @@ func GetNPULinkStatusA5(phyID, udieID, portID int32) (string, error) {
 }
 
 // GetNPUInterfaceTrafficA5 exec "hccn_tool -g -bandwidth -i device_id -u udie_id -p port_id -time [1-226]" to get bandwidth info
-func GetNPUInterfaceTrafficA5(phyID, udieID, portID, durationTime int32) (float64, float64, error) {
+func GetNPUInterfaceTrafficA5(logicID, udieID, portID, durationTime int32) (float64, float64, error) {
 	const (
 		noTraffic      = common.RetError
 		trafficPartLen = 4
 		txStr          = "TX:"
 		rxStr          = "RX:"
 	)
-	args := []string{"-g", "-bandwidth", "-i", strconv.Itoa(int(phyID)), "-u", strconv.Itoa(int(udieID)), "-p",
+	args := []string{"-g", "-bandwidth", "-i", strconv.Itoa(int(logicID)), "-u", strconv.Itoa(int(udieID)), "-p",
 		strconv.Itoa(int(portID)), "-time", strconv.Itoa(int(durationTime))}
 	// success result has two lines:
 	// Bandwidth TX: 0.00 MB/sec
@@ -375,7 +375,7 @@ func GetNPUInterfaceTrafficA5(phyID, udieID, portID, durationTime int32) (float6
 	outStr, err := getInfoFromHccnTool(args...)
 	hwlog.RunLog.Debugf("hccn_tool command exec result: %v", outStr)
 	if err != nil {
-		return noTraffic, noTraffic, buildHccnErr(phyID, "interface traffic", err)
+		return noTraffic, noTraffic, buildHccnErrA5("interface traffic", err)
 	}
 	var (
 		tx = float64(noTraffic)
@@ -412,19 +412,19 @@ func GetNPUInterfaceTrafficA5(phyID, udieID, portID, durationTime int32) (float6
 }
 
 // GetNPULinkSpeedA5 exec "hccn_tool -g -speed -i phy_id -u udie_id -p port_id" to get link speed
-func GetNPULinkSpeedA5(phyID, udieID, portID int32) (int, error) {
-	args := []string{"-g", "-speed", "-i", strconv.Itoa(int(phyID)), "-u", strconv.Itoa(int(udieID)), "-p", strconv.Itoa(int(portID))}
+func GetNPULinkSpeedA5(logicID, udieID, portID int32) (int, error) {
+	args := []string{"-g", "-speed", "-i", strconv.Itoa(int(logicID)), "-u", strconv.Itoa(int(udieID)), "-p", strconv.Itoa(int(portID))}
 	// command example: hccn_tool -g -speed -i 56 -u 0 -p 4
 	outStr, err := getInfoFromHccnTool(args...)
 	if err != nil {
-		return common.RetError, buildHccnErr(phyID, "link speed", err)
+		return common.RetError, buildHccnErrA5("link speed", err)
 	}
-	return getSpeedFromStrA5(outStr, phyID)
+	return getSpeedFromStrA5(outStr)
 }
 
-func getSpeedFromStrA5(str string, phyID int32) (int, error) {
+func getSpeedFromStrA5(str string) (int, error) {
 	if strings.Contains(str, naValue) {
-		return common.RetError, buildHccnErr(phyID, "link speed", fmt.Errorf("npu link speed is unknown, port is down"))
+		return common.RetError, buildHccnErrA5("link speed", fmt.Errorf("npu link speed is unknown, port is down"))
 	}
 
 	lines := strings.Split(strings.TrimSpace(str), "\n")
@@ -438,13 +438,17 @@ func getSpeedFromStrA5(str string, phyID int32) (int, error) {
 
 	speedInfo := strings.Split(strings.TrimSpace(parts[fourthIndex]), space)
 	if len(speedInfo) != netSpeedPartLen {
-		return common.RetError, buildHccnErr(phyID, "port speed ",
+		return common.RetError, buildHccnErrA5("port speed ",
 			fmt.Errorf("length of output %v is not equal to %v", speedInfo, netSpeedPartLen))
 	}
 	speed, err := strconv.Atoi(speedInfo[0])
 	if err != nil {
-		return common.RetError, buildHccnErr(phyID, "convert speed from string failed", err)
+		return common.RetError, buildHccnErrA5("convert speed from string failed", err)
 	}
 
 	return speed, nil
+}
+
+func buildHccnErrA5(msg string, err error) error {
+	return fmt.Errorf("get npu %s info failed,error is :%v", msg, err)
 }

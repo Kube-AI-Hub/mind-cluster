@@ -270,77 +270,84 @@ func InitCardInfo(group *sync.WaitGroup, ctx context.Context, n *NpuCollector) {
 func getNPUChipList(dmgr devmanager.DeviceInterface) (npuInfo []HuaWeiAIChip) {
 	chipList := make([]HuaWeiAIChip, 0)
 
-	cardNum, cards, err := dmgr.GetCardList()
-	if err != nil || cardNum == 0 {
+	devNum, devList, err := dmgr.GetDeviceList()
+	if err != nil || devNum == 0 {
 		logger.Errorf("failed to get npu info, error is: %v", err)
 		return chipList
 	}
 
 	chipListIDs := make([]int32, 0)
 
-	for _, cardID := range cards {
-		deviceNum, _ := dmgr.GetDeviceNumInCard(cardID)
-		for deviceID := int32(0); deviceID < deviceNum; deviceID++ {
-			var chip HuaWeiAIChip
-			// get logicID
-			logicID, err := dmgr.GetDeviceLogicID(cardID, deviceID)
-			if err != nil {
-				logger.Errorf("get logic ID of card: %v device:%v failed: %v", cardID, deviceID, err)
-				continue
-			}
+	for _, logicID := range devList {
+		var chip HuaWeiAIChip
+		chip.LogicID = logicID
+		chip.MainBoardId = dmgr.GetMainBoardId()
+		cardID, deviceID, _ := dmgr.GetCardIDDeviceID(logicID)
+		chip.CardId = cardID
 
-			chip.LogicID = logicID
-			chip.CardId = cardID
-			chip.MainBoardId = dmgr.GetMainBoardId()
+		setPhyId(&chip, dmgr, deviceID)
+		setChipInfo(&chip, dmgr, deviceID)
+		setBoardInfo(&chip, dmgr, deviceID)
+		setVdieID(&chip, dmgr)
+		assemblevNPUInfo(dmgr, logicID, &chip)
+		setPCIeBusInfo(logicID, dmgr, &chip)
+		setElabelInfo(&chip, dmgr)
+		setProductType(&chip, dmgr)
 
-			setPhyId(&chip, dmgr, cardID, deviceID)
-			setChipInfo(&chip, dmgr, cardID, deviceID)
-			setBoardInfo(&chip, dmgr, cardID, deviceID)
-			setVdieID(&chip, dmgr, cardID, deviceID)
-			assemblevNPUInfo(dmgr, logicID, &chip)
-			setPCIeBusInfo(logicID, dmgr, &chip)
-			setElabelInfo(&chip, dmgr, cardID)
-			setProductType(&chip, dmgr, cardID, deviceID)
-
-			chipList = append(chipList, chip)
-			chipListIDs = append(chipListIDs, logicID)
-		}
+		chipList = append(chipList, chip)
+		chipListIDs = append(chipListIDs, logicID)
 	}
 
-	logger.Debugf("flush chip info list successed,chip num is : %v, chipLogicIDs: %v",
+	logger.Debugf("flush chip info list successed, chip num is : %v, chipLogicIDs: %v",
 		len(chipList), chipListIDs)
 	return chipList
 }
 
-func setBoardInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32, deviceID int32) {
+func logSetError(domain string, chip *HuaWeiAIChip, deviceID int32, err error, msg string) {
+	if chip.CardId == -1 {
+		logger.Errorf("%s of logicID: %v failed: %v", msg, chip.LogicID, err)
+	} else {
+		logger.Errorf("%s of card: %v device:%v failed: %v", msg, chip.CardId, deviceID, err)
+	}
+}
+
+func setBoardInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, deviceID int32) {
 	boardInfo, err := dmgr.GetBoardInfo(chip.LogicID)
 	if err != nil {
-		logger.Errorf("get board info of card: %v device:%v failed: %v", cardID, deviceID, err)
+		logSetError("board info", chip, deviceID, err, "get board info")
 		boardInfo = common.BoardInfo{}
 	}
 	chip.BoardInfo = &boardInfo
 }
-func setVdieID(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32, deviceID int32) {
+
+func setVdieID(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface) {
 	vdieID, err := dmgr.GetDieID(chip.LogicID, dcmi.VDIE)
 	if err != nil {
-		logger.Debug(err)
+		logger.Debugf("get vdie ID of logicID: %v failed: %v", chip.LogicID, err)
+		return
 	}
 	chip.VDieID = vdieID
 }
 
-func setPhyId(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32, deviceID int32) {
+func setPhyId(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, deviceID int32) {
 	phyID, err := dmgr.GetPhysicIDFromLogicID(chip.LogicID)
 	if err != nil {
-		logger.Errorf("get phy ID of card: %v device:%v failed: %v", cardID, deviceID, err)
+		logSetError("phy ID", chip, deviceID, err, "get phy ID")
+		return
 	}
 	chip.PhyId = phyID
-	chip.DeviceID = phyID
+
+	if chip.CardId == -1 {
+		chip.DeviceID = chip.LogicID
+	} else {
+		chip.DeviceID = phyID
+	}
 }
-func setChipInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32, deviceID int32) {
-	// get chip info
+
+func setChipInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, deviceID int32) {
 	chipInfo, err := dmgr.GetChipInfo(chip.LogicID)
 	if err != nil {
-		logger.Errorf("get chip info of card: %v device:%v failed: %v", cardID, deviceID, err)
+		logSetError("chip info", chip, deviceID, err, "get chip info")
 		chipInfo = &common.ChipInfo{}
 	}
 	chip.ChipInfo = chipInfo
@@ -363,18 +370,32 @@ func setPCIeBusInfo(logicID int32, dmgr devmanager.DeviceInterface, hwChip *HuaW
 	hwChip.PCIeBusInfo = pcieInfo
 }
 
-func setElabelInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32) {
-	elabelInfo, err := dmgr.GetCardElabelV2(cardID)
-	if err != nil {
-		logger.Errorf("get elabel info of card: %v failed: %v", cardID, err)
-		chip.ElabelInfo = &common.ElabelInfo{SerialNumber: "NA"}
-		return
+func setElabelInfo(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface) {
+	var elabelInfo common.ElabelInfo
+	var err error
+
+	if chip.CardId != -1 {
+		elabelInfo, err = dmgr.GetCardElabelV2(chip.CardId)
+		if err != nil {
+			logger.Errorf("get elabel info of cardID: %v failed: %v", chip.CardId, err)
+			chip.ElabelInfo = &common.ElabelInfo{SerialNumber: "NA"}
+			return
+		}
+	} else {
+		elabelInfo, err = dmgr.GetCardElabelV2(chip.LogicID)
+		if err != nil {
+			logger.Errorf("get elabel info of logicID: %v failed: %v", chip.LogicID, err)
+			chip.ElabelInfo = &common.ElabelInfo{SerialNumber: "NA"}
+			return
+		}
 	}
+
 	chip.ElabelInfo = &common.ElabelInfo{
 		SerialNumber: elabelInfo.SerialNumber,
 	}
 }
-func setProductType(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID int32, deviceID int32) {
+
+func setProductType(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface) {
 	if dmgr.GetDevType() != api.Ascend310P {
 		logger.LogfWithOptions(logger.WarnLevel, logger.LogOptions{
 			Domain:    "setProductType",
@@ -384,22 +405,30 @@ func setProductType(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface, cardID 
 			"%v does not support product type info", dmgr.GetDevType())
 		return
 	}
-	if productType, ok := getFromCache(DomainForProductType, cardID, deviceID).(string); ok {
+
+	if productType, ok := getFromCache(DomainForProductType, chip.LogicID).(string); ok {
 		chip.ProductType = productType
 		return
 	}
 
 	productType, err := dmgr.GetProductType(chip.LogicID)
 	if err != nil {
-		logger.LogfWithOptions(logger.ErrorLevel, logger.LogOptions{
-			Domain: DomainForProductType,
-			ID:     cardID},
-			"get product type info of card: %v failed: %v", cardID, err)
+		if chip.CardId == -1 {
+			logger.LogfWithOptions(logger.ErrorLevel, logger.LogOptions{
+				Domain: DomainForProductType,
+				ID:     chip.LogicID},
+				"get product type info of logicID: %v failed: %v", chip.LogicID, err)
+		} else {
+			logger.LogfWithOptions(logger.ErrorLevel, logger.LogOptions{
+				Domain: DomainForProductType,
+				ID:     chip.CardId},
+				"get product type info of card: %v failed: %v", chip.CardId, err)
+		}
 		return
 	}
 	chip.ProductType = productType
-	saveToCache(DomainForProductType, cardID, deviceID, productType)
-	hwlog.ResetErrCnt(DomainForProductType, cardID)
+	saveToCache(DomainForProductType, chip.LogicID, productType)
+	hwlog.ResetErrCnt(DomainForProductType, chip.LogicID)
 }
 
 func assemblevNPUInfo(dmgr devmanager.DeviceInterface, logicID int32, baseChipInfo *HuaWeiAIChip) {
@@ -467,13 +496,13 @@ func getChipListCache(n *NpuCollector) []HuaWeiAIChip {
 	return chipList
 }
 
-func saveToCache(domain string, cardID int32, deviceID int32, value interface{}) {
-	key := domain + strconv.Itoa(int(cardID)) + strconv.Itoa(int(deviceID))
+func saveToCache(domain string, logicID int32, value interface{}) {
+	key := domain + strconv.Itoa(int(logicID))
 	npuInfoCache.Store(key, value)
 }
 
-func getFromCache(domain string, cardID int32, deviceID int32) interface{} {
-	key := domain + strconv.Itoa(int(cardID)) + strconv.Itoa(int(deviceID))
+func getFromCache(domain string, logicID int32) interface{} {
+	key := domain + strconv.Itoa(int(logicID))
 	value, ok := npuInfoCache.Load(key)
 	if !ok {
 		return nil

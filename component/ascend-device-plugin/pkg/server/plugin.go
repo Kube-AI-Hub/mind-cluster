@@ -1153,6 +1153,32 @@ func mountShareDeviceConfig(resp *v1beta1.ContainerAllocateResponse, devices []i
 	}
 }
 
+// convertToLogicIDs converts a list of physic IDs to logic IDs using allDevs info
+func convertToLogicIDs(devices []int, allDevs []common.NpuDevice) []int {
+	var logicIDs []int
+	for _, phyID := range devices {
+		found := false
+		for _, dev := range allDevs {
+			if dev.PhyID == int32(phyID) {
+				logicIDs = append(logicIDs, int(dev.LogicID))
+				found = true
+				break
+			}
+		}
+		if !found {
+			hwlog.RunLog.Warnf("cannot find logicID for physicID %d", phyID)
+		}
+	}
+	return logicIDs
+}
+
+func getFinalVisibleDevices(ascendVisibleDevices []int, allNPUInfo common.NpuAllInfo) []int {
+	if common.ParamOption.RealCardType == api.Ascend910A5 {
+		return convertToLogicIDs(ascendVisibleDevices, allNPUInfo.AllDevs)
+	}
+	return ascendVisibleDevices
+}
+
 // Allocate is called by kubelet to mount device to k8s pod.
 func (ps *PluginServer) Allocate(ctx context.Context, requests *v1beta1.AllocateRequest) (*v1beta1.AllocateResponse,
 	error) {
@@ -1193,9 +1219,12 @@ func (ps *PluginServer) Allocate(ctx context.Context, requests *v1beta1.Allocate
 			return nil, err
 		}
 
+		// Determine final ID type based on device type
+		finalVisibleDevices := getFinalVisibleDevices(ascendVisibleDevices, allNPUInfo)
+
 		resp := new(v1beta1.ContainerAllocateResponse)
-		mountShareDeviceConfig(resp, ascendVisibleDevices, npuInfoConfigDir)
-		ps.setNPUDeviceMount(resp, ascendVisibleDevices)
+		mountShareDeviceConfig(resp, finalVisibleDevices, npuInfoConfigDir)
+		ps.setNPUDeviceMount(resp, finalVisibleDevices)
 		ps.setHcclTopoFilePathEnv(resp, allNPUInfo)
 		ps.SetSlowNodeNoticeEnv(resp)
 		resps.ContainerResponses = append(resps.ContainerResponses, resp)

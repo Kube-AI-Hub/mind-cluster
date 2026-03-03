@@ -116,7 +116,7 @@ func (c *NetworkA5Collector) Describe(ch chan<- *prometheus.Desc) {
 func (c *NetworkA5Collector) CollectToCache(n *colcommon.NpuCollector, chipList []colcommon.HuaWeiAIChip) {
 	for _, chip := range chipList {
 		var netInfos []*common.NpuNetInfo
-		netInfos = collectNetworkA5Info(chip.PhyId)
+		netInfos = collectNetworkA5Info(chip.LogicID)
 		c.LocalCache.Store(chip.PhyId, netInfoA5Cache{chip: chip, timestamp: time.Now(), extInfo: netInfos})
 	}
 	colcommon.UpdateCache[netInfoA5Cache](n, colcommon.GetCacheKey(c), &c.LocalCache)
@@ -192,7 +192,7 @@ func telegrafUpdateNetInfo(cache netInfoA5Cache, fieldMap map[string]interface{}
 	}
 }
 
-func collectNetworkA5Info(phyID int32) []*common.NpuNetInfo {
+func collectNetworkA5Info(logicID int32) []*common.NpuNetInfo {
 	var newNetInfo []*common.NpuNetInfo
 	for dieID := 0; dieID < maxDieId; dieID++ {
 		for portID := 0; portID < maxPortId; portID++ {
@@ -201,28 +201,28 @@ func collectNetworkA5Info(phyID int32) []*common.NpuNetInfo {
 				BandwidthInfo:  &common.BandwidthInfo{},
 				LinkSpeedInfo:  &common.LinkSpeedInfo{},
 			}
-			if linkState, err := hccn.GetNPULinkStatusA5(phyID, int32(dieID), int32(portID)); err == nil {
+			if linkState, err := hccn.GetNPULinkStatusA5(logicID, int32(dieID), int32(portID)); err == nil {
 				hwlog.RunLog.Debugf("hccn_tool get npu link status: %s", linkState)
 				netInfo.LinkStatusInfo.LinkState = linkState
-				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForLinkState, dieID, portID), phyID)
+				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForLinkState, dieID, portID), logicID)
 			} else {
-				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForLinkState, dieID, portID), phyID, err)
+				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForLinkState, dieID, portID), logicID, err)
 				netInfo.LinkStatusInfo.LinkState = colcommon.Abnormal
 			}
-			if tx, rx, err := hccn.GetNPUInterfaceTrafficA5(phyID, int32(dieID), int32(portID), bandwidthTime); err == nil {
+			if tx, rx, err := hccn.GetNPUInterfaceTrafficA5(logicID, int32(dieID), int32(portID), bandwidthTime); err == nil {
 				netInfo.BandwidthInfo.RxValue = rx
 				netInfo.BandwidthInfo.TxValue = tx
-				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForBandwidth, dieID, portID), phyID)
+				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForBandwidth, dieID, portID), logicID)
 			} else {
 				netInfo.BandwidthInfo = nil
-				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForBandwidth, dieID, portID), phyID, err)
+				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForBandwidth, dieID, portID), logicID, err)
 			}
-			if speed, err := hccn.GetNPULinkSpeedA5(phyID, int32(dieID), int32(portID)); err == nil {
+			if speed, err := hccn.GetNPULinkSpeedA5(logicID, int32(dieID), int32(portID)); err == nil {
 				netInfo.LinkSpeedInfo.Speed = float64(speed)
-				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForLinkSpeed, dieID, portID), phyID)
+				hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForLinkSpeed, dieID, portID), logicID)
 			} else {
 				netInfo.LinkSpeedInfo = nil
-				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForLinkSpeed, dieID, portID), phyID, err)
+				logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForLinkSpeed, dieID, portID), logicID, err)
 			}
 			newNetInfo = append(newNetInfo, &netInfo)
 		}

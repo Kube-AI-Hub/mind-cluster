@@ -119,7 +119,7 @@ func geenContainerInfo(chip *colcommon.HuaWeiAIChip, containerMap map[int32]cont
 }
 func collectCardLabelValue(chip *colcommon.HuaWeiAIChip, namespaceValue, podNameValue, containerName string) []string {
 
-	return []string{strconv.FormatInt(int64(chip.DeviceID), colcommon.Base), common.GetNpuName(chip.ChipInfo), chip.VDieID,
+	return []string{strconv.FormatInt(int64(chip.PhyId), colcommon.Base), common.GetNpuName(chip.ChipInfo), chip.VDieID,
 		chip.PCIeBusInfo, namespaceValue, podNameValue, containerName}
 }
 
