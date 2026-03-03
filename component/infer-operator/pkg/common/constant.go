@@ -58,9 +58,15 @@ const (
 	InstanceIndexEnvKey = "INSTANCE_INDEX"
 	// InstanceRoleEnvKey is env key used to identify instance role
 	InstanceRoleEnvKey = "INSTANCE_ROLE"
+	// InferServiceIndexEnvKey is env key used to identify infer service index
+	InferServiceIndexEnvKey = "INFER_SERVICE_INDEX"
+	// InferServiceNameEnvKey is env key used to identify infer service set name
+	InferServiceNameEnvKey = "INFER_SERVICE_NAME"
 
 	// ValidateErrorReason is the reason of the validate error condition
 	ValidateErrorReason = "ValidateError"
+	// ServiceCreateReason is the reason of service create error condition
+	ServiceCreateReason = "ServiceCreateError"
 	// InferServiceSetReadyReason is the reason of the infer serviceset ready condition
 	InferServiceSetReadyReason = "InferServiceSetReady"
 	// InferServiceReadyReason is the reason of the infer service ready condition
@@ -69,7 +75,13 @@ const (
 	InstanceSetReadyReason = "InstanceSetReady"
 	// InstanceReadyReason is the reason of the instance ready condition
 	InstanceReadyReason = "InstanceReady"
-	DefaultReplicas     = int32(1)
+	// AllWorkloadReadyReason is the reason of instanceSet ready condition
+	AllWorkloadReadyReason = "AllWorkLoadReady"
+	// AllWorkloadReadyMessage is the message of instanceSet ready condition
+	AllWorkloadReadyMessage = "All WorkLoad replicas are ready"
+	// WorkloadNotReadyReason is the reason of instanceSet's workload not ready condition
+	WorkloadNotReadyReason = "ReplicasNotReady"
+	DefaultReplicas        = int32(1)
 	// TrueBool is the value of the true boolean
 	TrueBool = "true"
 	// FalseBool is the value of the false boolean
@@ -78,6 +90,12 @@ const (
 	DefaultPortName = "infer"
 	// DefaultPort is the default port
 	DefaultPort = 8080
+	// InferServiceNameSplitNum is the least number of segments after splitting infer service name
+	InferServiceNameSplitNum = 2
+	// BaseDec is the base for integer conversion
+	BaseDec = 10
+	// BitSize is the bit size for integer conversion
+	BitSize = 32
 )
 
 // InferServiceSetConditionType is the type of the infer serviceset condition
