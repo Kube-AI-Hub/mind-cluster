@@ -157,6 +157,7 @@ func (m *JobFaultManager) deleteSameWithFirstFault(faults []*Fault, isSftFault b
 			// within 30 seconds, dev 1 occur faults 1 for 2 times, and dev 2 occur fault 1 for 1 times,
 			// which is a software fault
 			if isSftFault {
+				hwlog.RunLog.Infof("fault: %+v, is software fault", fault)
 				continue
 			}
 			// within 30 seconds, dev 1 occur faults 1 for 2 times, and no other devs occur fault 1, which is a hardware fault

@@ -51,8 +51,8 @@ func WatchGlobalConfig(ctx context.Context) {
 }
 
 func loadGlobalConfig(cm *v1.ConfigMap) {
-	if cm.Data == nil {
-		hwlog.RunLog.Errorf("cm <%s/%s> data is nil", api.ClusterNS, constant.ConfigCmName)
+	if cm == nil || cm.Data == nil {
+		hwlog.RunLog.Errorf("cm <%s/%s> or its data is nil", api.ClusterNS, constant.ConfigCmName)
 		return
 	}
 	data, ok := cm.Data[constant.ManuallySeparateNPUConfigKey]

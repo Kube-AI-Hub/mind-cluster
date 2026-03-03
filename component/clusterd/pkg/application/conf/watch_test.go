@@ -42,10 +42,24 @@ separate:
 release:
   fault_free_hours: 48
 `
+	testCase2 = `
+separate:
+  fault_window_hours: 24
+  fault_threshold: 3
+release:
+  fault_free_hours: 48
+`
 	invalidTestCase1 = `
 enabled: true
 separate:
   fault_window_hours: 10000
+  fault_threshold: 3
+release:
+  fault_free_hours: 48
+`
+	invalidTestCase2 = `
+enabled: true
+separate:
   fault_threshold: 3
 release:
   fault_free_hours: 48
@@ -94,6 +108,8 @@ func TestLoadGlobalConfig(t *testing.T) {
 	convey.Convey("test func loadGlobalConfig failed, key is not found", t, testLoadNotExistKey)
 	convey.Convey("test func loadGlobalConfig failed, unmarshal failed", t, testLoadUnmarshalErr)
 	convey.Convey("test func loadGlobalConfig failed, check failed", t, testLoadCheckErr)
+	convey.Convey("test func loadGlobalConfig success, enabled is nil", t, testNilEnabled)
+	convey.Convey("test func loadGlobalConfig failed, fault_window_hours is nil", t, testNilWindow)
 }
 
 func testLoadNilData() {
@@ -133,6 +149,28 @@ func testLoadCheckErr() {
 	resetGlobalConfig()
 	cm := getDemoCm()
 	cm.Data = map[string]string{constant.ManuallySeparateNPUConfigKey: invalidTestCase1}
+	loadGlobalConfig(cm)
+	convey.So(conf.GetManualEnabled(), convey.ShouldBeFalse)
+	convey.So(conf.GetSeparateWindow(), convey.ShouldEqual, 0)
+	convey.So(conf.GetSeparateThreshold(), convey.ShouldEqual, 0)
+	convey.So(conf.GetReleaseDuration(), convey.ShouldEqual, 0)
+}
+
+func testNilEnabled() {
+	resetGlobalConfig()
+	cm := getDemoCm()
+	cm.Data = map[string]string{constant.ManuallySeparateNPUConfigKey: testCase2}
+	loadGlobalConfig(cm)
+	convey.So(conf.GetManualEnabled(), convey.ShouldBeFalse)
+	convey.So(conf.GetSeparateWindow(), convey.ShouldEqual, int64(defaultFaultWindowHours*constant.HoursToMilliseconds))
+	convey.So(conf.GetSeparateThreshold(), convey.ShouldEqual, int64(defaultFaultThreshold))
+	convey.So(conf.GetReleaseDuration(), convey.ShouldEqual, int64(defaultFaultFreeHours*constant.HoursToMilliseconds))
+}
+
+func testNilWindow() {
+	resetGlobalConfig()
+	cm := getDemoCm()
+	cm.Data = map[string]string{constant.ManuallySeparateNPUConfigKey: invalidTestCase2}
 	loadGlobalConfig(cm)
 	convey.So(conf.GetManualEnabled(), convey.ShouldBeFalse)
 	convey.So(conf.GetSeparateWindow(), convey.ShouldEqual, 0)

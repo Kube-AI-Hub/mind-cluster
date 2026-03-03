@@ -172,9 +172,6 @@ func convertDevIdToName(id string, devType string) string {
 
 // getIncrementFault newInfo have, but oldInfo not have
 func (p *manualFaultProcessor) getIncrementFault(oldInfo, newInfo map[string][]constant.DeviceFault) map[string][]constant.DeviceFault {
-	if len(oldInfo) == 0 {
-		return newInfo
-	}
 	if len(newInfo) == 0 {
 		return make(map[string][]constant.DeviceFault)
 	}
@@ -182,7 +179,7 @@ func (p *manualFaultProcessor) getIncrementFault(oldInfo, newInfo map[string][]c
 	for devName, faults := range newInfo {
 		oldFaults, ok := oldInfo[devName]
 		if !ok {
-			incrementFault[devName] = faults
+			incrementFault[devName] = append([]constant.DeviceFault(nil), faults...)
 			continue
 		}
 		for _, fault := range faults {
@@ -190,6 +187,8 @@ func (p *manualFaultProcessor) getIncrementFault(oldInfo, newInfo map[string][]c
 				// not increment
 				continue
 			}
+			// notice: if the device fault info needs to be modified,
+			// remember to check if the structure of the device fault info contains a reference type
 			incrementFault[devName] = append(incrementFault[devName], fault)
 		}
 	}

@@ -60,6 +60,7 @@ func checkDiffAndDelete() {
 	// get manual info cm failed, don't check diff
 	cm, err := manualfault.TryGetManualCm()
 	if err != nil {
+		hwlog.RunLog.Errorf("get cm <%s/%s> err: %v, don't check diff", api.ClusterNS, constant.ManualDevInfoCmName, err)
 		return
 	}
 	manualDeleted := getManualDeletedDev(cm)
@@ -113,11 +114,11 @@ func doRelease(nodeName, dev string, devInfo []manualfault.DevCmInfo) {
 func LoadManualCmInfo() {
 	cm, err := manualfault.TryGetManualCm()
 	if err != nil {
-		hwlog.RunLog.Errorf("load cm <%s/%s> err: %v", api.ClusterNS, constant.ConfigCmName, err)
+		hwlog.RunLog.Errorf("load cm <%s/%s> err: %v", api.ClusterNS, constant.ManualDevInfoCmName, err)
 		return
 	}
 	if cm == nil {
-		hwlog.RunLog.Infof("manually separate npu cm <%s/%s> is not found", api.ClusterNS, constant.ConfigCmName)
+		hwlog.RunLog.Infof("manually separate npu cm <%s/%s> is not found", api.ClusterNS, constant.ManualDevInfoCmName)
 		return
 	}
 	cmInfo, err := manualfault.ParseManualCm(cm)

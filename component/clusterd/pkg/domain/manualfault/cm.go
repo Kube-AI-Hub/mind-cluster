@@ -33,10 +33,6 @@ import (
 	"clusterd/pkg/interface/kube"
 )
 
-const (
-	manualDevInfoCmName = "clusterd-manual-info-cm"
-)
-
 // LastCmInfo last cm info
 var LastCmInfo map[string]NodeCmInfo
 
@@ -263,13 +259,13 @@ func ParseManualCm(cm *v1.ConfigMap) (map[string]NodeCmInfo, error) {
 
 // DeleteManualCm delete manually separate npu info configmap
 func DeleteManualCm() {
-	if err := kube.DeleteConfigMap(manualDevInfoCmName, api.ClusterNS); err != nil {
+	if err := kube.DeleteConfigMap(constant.ManualDevInfoCmName, api.ClusterNS); err != nil {
 		// delete non-existent cm will be failed, need filter
 		if !errors.IsNotFound(err) {
 			hwlog.RunLog.Errorf("manually separate npu info is nill, delete configmap failed, error: %v", err)
 			return
 		}
-		hwlog.RunLog.Debugf("cm<%s/%s> not found, ignore", api.ClusterNS, manualDevInfoCmName)
+		hwlog.RunLog.Debugf("cm<%s/%s> not found, ignore", api.ClusterNS, constant.ManualDevInfoCmName)
 	}
 	LastCmInfo = make(map[string]NodeCmInfo)
 }
@@ -283,7 +279,8 @@ func TryGetManualCm() (*v1.ConfigMap, error) {
 	for i := 0; i < retryTime; i++ {
 		cm, err = GetManualCm()
 		if err != nil {
-			hwlog.RunLog.Errorf("get cm <%s/%s> info failed, error: %v, retry", api.ClusterNS, manualDevInfoCmName, err)
+			hwlog.RunLog.Errorf("get cm <%s/%s> info failed, error: %v, retry",
+				api.ClusterNS, constant.ManualDevInfoCmName, err)
 			time.Sleep(retryInterval)
 			continue
 		}
@@ -294,14 +291,15 @@ func TryGetManualCm() (*v1.ConfigMap, error) {
 
 // GetManualCm get manually separate npu info configmap
 func GetManualCm() (*v1.ConfigMap, error) {
-	cm, err := kube.GetConfigMap(manualDevInfoCmName, api.ClusterNS)
+	cm, err := kube.GetConfigMap(constant.ManualDevInfoCmName, api.ClusterNS)
 	if err != nil {
 		// get non-existent cm will be failed, need filter
 		if !errors.IsNotFound(err) {
-			hwlog.RunLog.Errorf("manually separate npu info is nil, get cm <%s/%s> failed, err: %v", api.ClusterNS, manualDevInfoCmName, err)
+			hwlog.RunLog.Errorf("manually separate npu info is nil, get cm <%s/%s> failed, err: %v",
+				api.ClusterNS, constant.ManualDevInfoCmName, err)
 			return nil, err
 		}
-		hwlog.RunLog.Debugf("cm <%s/%s> not found, ignore", api.ClusterNS, manualDevInfoCmName)
+		hwlog.RunLog.Debugf("cm <%s/%s> not found, ignore", api.ClusterNS, constant.ManualDevInfoCmName)
 		return nil, nil
 	}
 	return cm, nil
@@ -324,7 +322,7 @@ func UpdateOrCreateManualCm() {
 		sort.Strings(info.Total)
 	}
 	data := ConvertNodeInfoToCmData(currentCmInfo)
-	if err := kube.UpdateOrCreateConfigMap(manualDevInfoCmName, api.ClusterNS, data, nil); err != nil {
+	if err := kube.UpdateOrCreateConfigMap(constant.ManualDevInfoCmName, api.ClusterNS, data, nil); err != nil {
 		hwlog.RunLog.Errorf("manually separate npu info is nil, update configmap err: %v", err)
 		return
 	}

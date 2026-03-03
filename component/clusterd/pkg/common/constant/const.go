@@ -443,6 +443,8 @@ const (
 const (
 	// ConfigCmName the name of config cm
 	ConfigCmName = "clusterd-config-cm"
+	// ManualDevInfoCmName manual device info cm name
+	ManualDevInfoCmName = "clusterd-manual-info-cm"
 	// ManuallySeparateNPUConfigKey the key of manually separate npu config in cm
 	ManuallySeparateNPUConfigKey = "manually_separate_policy.conf"
 	// HoursToMilliseconds hours to milliseconds
