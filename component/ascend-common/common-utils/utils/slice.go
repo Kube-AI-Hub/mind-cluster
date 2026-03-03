@@ -143,7 +143,7 @@ func GetItemInANotInB(mapA, mapB map[string][]string) map[string][]string {
 				result[keyA] = diffValues
 			}
 		} else {
-			result[keyA] = valuesA
+			result[keyA] = append([]string(nil), valuesA...)
 		}
 	}
 

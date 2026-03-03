@@ -74,13 +74,13 @@ func (c *FaultCounter) AddFault(input *Fault) {
 		return
 	}
 	fault := constructFaultInfo(input)
+
 	c.mutex.Lock()
-	defer func() {
-		c.mutex.Unlock()
-		c.printCountInfo()
-	}()
+	defer c.mutex.Unlock()
+
 	nodeInfo, ok := c.faults[fault.NodeName]
 	if !ok {
+		logCounterFault(fault, []int64{fault.ReceiveTime})
 		if c.isReachFrequency([]int64{fault.ReceiveTime}) {
 			c.dealFrequencyFault(fault)
 			return
@@ -92,6 +92,7 @@ func (c *FaultCounter) AddFault(input *Fault) {
 	}
 	devInfo, ok := nodeInfo[fault.DevName]
 	if !ok {
+		logCounterFault(fault, []int64{fault.ReceiveTime})
 		if c.isReachFrequency([]int64{fault.ReceiveTime}) {
 			c.dealFrequencyFault(fault)
 			return
@@ -103,6 +104,7 @@ func (c *FaultCounter) AddFault(input *Fault) {
 	}
 	times, ok := devInfo.fault[fault.FaultCode]
 	if !ok {
+		logCounterFault(fault, []int64{fault.ReceiveTime})
 		if c.isReachFrequency([]int64{fault.ReceiveTime}) {
 			c.dealFrequencyFault(fault)
 			return
@@ -111,7 +113,7 @@ func (c *FaultCounter) AddFault(input *Fault) {
 		return
 	}
 	times = append(times, fault.ReceiveTime)
-
+	logCounterFault(fault, times)
 	times = c.deleteExpiredFaultTime(times)
 	if c.isReachFrequency(times) {
 		c.dealFrequencyFault(fault)
@@ -127,20 +129,9 @@ func (c *FaultCounter) dealFrequencyFault(fault FaultInfo) {
 	FaultCmInfo.AddSeparateDev(fault)
 }
 
-func (c *FaultCounter) printCountInfo() {
-	if len(c.faults) == 0 {
-		hwlog.RunLog.Info("faults count is empty")
-		return
-	}
-	hwlog.RunLog.Info("begin record faults count")
-	for node, nodeInfo := range c.faults {
-		for dev, devInfo := range nodeInfo {
-			for code, times := range devInfo.fault {
-				hwlog.RunLog.Infof("node: %s, dev: %s, code: %s, times: %d", node, dev, code, len(times))
-			}
-		}
-	}
-	hwlog.RunLog.Info("record faults count end")
+func logCounterFault(fault FaultInfo, times []int64) {
+	hwlog.RunLog.Infof("detect frequency fault, node: %s, dev: %s, code: %s, times: %d, fault time list: %+v",
+		fault.NodeName, fault.DevName, fault.FaultCode, len(times), times)
 }
 
 // ClearDevFaults safe clear dev faults
