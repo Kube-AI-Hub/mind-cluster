@@ -29,6 +29,7 @@ import (
 	"Ascend-device-plugin/pkg/topology"
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
+	"ascend-common/common-utils/utils"
 )
 
 const (
@@ -192,8 +193,21 @@ func checkPresetWithShareDevCount() bool {
 }
 
 func checkSoftShareDevConfigDir() bool {
-	if *softShareDevConfigDir != "" && !filepath.IsAbs(*softShareDevConfigDir) {
+	if *softShareDevConfigDir == "" {
+		return true
+	}
+	if *shareDevCount != common.MaxShareDevCount {
+		hwlog.RunLog.Errorf("shareDevCount should be %d when softShareDevConfigDir is set",
+			common.MaxShareDevCount)
+		return false
+	}
+	if !filepath.IsAbs(*softShareDevConfigDir) {
 		hwlog.RunLog.Errorf("softShareDevConfigDir: %s is not absolute path", *softShareDevConfigDir)
+		return false
+	}
+	_, err := utils.RealDirChecker(filepath.Dir(*softShareDevConfigDir), true, false)
+	if err != nil {
+		hwlog.RunLog.Errorf("check softShareDevConfigDir: %s failed, error is %v", *softShareDevConfigDir, err)
 		return false
 	}
 	return true
