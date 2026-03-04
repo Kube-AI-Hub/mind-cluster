@@ -609,10 +609,23 @@ func TestOnPodDeleteFunc(t *testing.T) {
 	})
 }
 
+func newVcjobWithLabel(uid string, labels map[string]string) *v1alpha1.Job {
+	return &v1alpha1.Job{ObjectMeta: metav1.ObjectMeta{UID: types.UID(uid), Labels: labels}}
+}
+
+func newDeployWithLabel(uid string, labels map[string]string) *appsv1.Deployment {
+	return &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{UID: types.UID(uid), Labels: labels}}
+}
+
+func newStsWithLabel(uid string, labels map[string]string) *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{UID: types.UID(uid), Labels: labels}}
+}
+
 func TestOnOwnerCreateFunc(t *testing.T) {
 	convey.Convey("TestOnOwnerCreateFunc", t, func() {
 		r := newCommonReconciler()
 		fn := r.onOwnerCreateFunc()
+		atlasLabel := map[string]string{api.AtlasTaskLabel: ""}
 		convey.Convey("01-not support kind object should return false", func() {
 			res := fn(event.CreateEvent{Object: &corev1.Pod{}})
 			convey.So(res, convey.ShouldEqual, true)
@@ -622,12 +635,7 @@ func TestOnOwnerCreateFunc(t *testing.T) {
 			convey.So(res, convey.ShouldEqual, false)
 		})
 		convey.Convey("03-vcjob with needed label should return true", func() {
-			vcjob := &v1alpha1.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{api.AtlasTaskLabel: ""},
-				},
-			}
-			res := fn(event.CreateEvent{Object: vcjob})
+			res := fn(event.CreateEvent{Object: newVcjobWithLabel("", atlasLabel)})
 			convey.So(res, convey.ShouldEqual, true)
 		})
 		convey.Convey("04-deployment without needed label should return false", func() {
@@ -635,16 +643,13 @@ func TestOnOwnerCreateFunc(t *testing.T) {
 			convey.So(res, convey.ShouldEqual, false)
 		})
 		convey.Convey("05-deployment with needed label should return true", func() {
-			res := fn(event.CreateEvent{Object: &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{api.AtlasTaskLabel: ""},
-				},
-			}})
+			deploy := newDeployWithLabel("deploy-uid-1", atlasLabel)
+			res := fn(event.CreateEvent{Object: deploy})
 			convey.So(res, convey.ShouldEqual, true)
+			convey.So(r.rtGenerators[deploy.UID], convey.ShouldNotBeNil)
 		})
 		convey.Convey("06-ascend job without labels should return true", func() {
-			job := newCommonAscendJob()
-			res := fn(event.CreateEvent{Object: job})
+			res := fn(event.CreateEvent{Object: newCommonAscendJob()})
 			convey.So(res, convey.ShouldEqual, true)
 		})
 		convey.Convey("07-ascend job without invalid fault-retry-times labels should return false", func() {
@@ -652,6 +657,16 @@ func TestOnOwnerCreateFunc(t *testing.T) {
 			job.Labels = map[string]string{labelFaultRetryTimes: "xx"}
 			res := fn(event.CreateEvent{Object: job})
 			convey.So(res, convey.ShouldEqual, false)
+		})
+		convey.Convey("08-statefulset without needed label should return false", func() {
+			res := fn(event.CreateEvent{Object: &appsv1.StatefulSet{}})
+			convey.So(res, convey.ShouldEqual, false)
+		})
+		convey.Convey("09-statefulset with needed label should return true", func() {
+			sts := newStsWithLabel("sts-uid-1", atlasLabel)
+			res := fn(event.CreateEvent{Object: sts})
+			convey.So(res, convey.ShouldEqual, true)
+			convey.So(r.rtGenerators[sts.UID], convey.ShouldNotBeNil)
 		})
 	})
 }

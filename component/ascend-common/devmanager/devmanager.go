@@ -482,7 +482,8 @@ func (d *DeviceManager) GetDeviceUtilizationRateV2(logicID int32) (common.DcmiMu
 	cardID, deviceID, err := d.getCardIdAndDeviceId(logicID)
 	if err != nil {
 		hwlog.RunLog.Error(err)
-		return dcmi.BuildErrNpuMultiUtilizationInfo(), fmt.Errorf("failed to get multi utilization by logicID(%d)", logicID)
+		return dcmi.BuildErrNpuMultiUtilizationInfo(), fmt.Errorf("failed to get multi utilization by logicID(%d)",
+			logicID)
 	}
 	res, err := d.DcMgr.DcGetDeviceUtilizationRateV2(cardID, deviceID)
 	if err != nil {
@@ -769,7 +770,7 @@ func (d *DeviceManager) GetAllProductType() ([]string, error) {
 // GetNpuWorkMode get work mode of NPU
 func (d *DeviceManager) GetNpuWorkMode() string {
 	if d.DevType == api.Ascend910B || d.DevType == api.Ascend910A3 || d.DevType == api.Ascend910A5 {
-		hwlog.RunLog.Warnf("only AMP mode is available on %s", d.DevType)
+		hwlog.RunLog.Warnf("only AMP mode is available on %s", devTypeMap[d.DevType])
 		return common.AMPMode
 	}
 

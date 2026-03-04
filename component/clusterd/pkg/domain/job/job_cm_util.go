@@ -33,7 +33,6 @@ const (
 	cmCutNumKey       = "total"
 	jobStatus         = "job_status"
 	addTime           = "time"
-	val910            = api.Ascend910MinuxCase
 	ptFramework       = "pytorch"
 	torIpTag          = "sharedTorIp"
 	masterAddrKey     = "masterAddr"
@@ -53,7 +52,8 @@ func initCM(jobInfo constant.JobInfo) bool {
 	data[addTime] = strconv.Itoa(int(jobInfo.AddTime))
 	data[sid] = jobInfo.Sid
 	cmName := fmt.Sprintf("%s-%s", configmapPrefix, jobInfo.Name)
-	if err := kube.CreateOrUpdateConfigMap(cmName, jobInfo.NameSpace, data, getDefaultLabel()); err != nil {
+	if err := kube.CreateOrUpdateConfigMap(cmName, jobInfo.NameSpace, data,
+		getDefaultLabel(jobInfo.ResourceType)); err != nil {
 		hwlog.RunLog.Errorf("initCM CreateOrUpdateConfigMap err: %s", err)
 		return false
 	}
@@ -86,7 +86,7 @@ func updateCM(jobInfo constant.JobInfo, index int, hccl string) bool {
 	} else {
 		cmName = fmt.Sprintf("%s-%s-%d", configmapPrefix, jobInfo.Name, index)
 	}
-	err := kube.UpdateOrCreateConfigMap(cmName, jobInfo.NameSpace, data, getDefaultLabel())
+	err := kube.UpdateOrCreateConfigMap(cmName, jobInfo.NameSpace, data, getDefaultLabel(jobInfo.ResourceType))
 	if err != nil {
 		hwlog.RunLog.Errorf("update configmap %s failed, err: %v", cmName, err)
 		return false
@@ -122,7 +122,7 @@ func preDeleteCM(jobInfo constant.JobInfo, hccls []string) bool {
 		if i < len(hccls) {
 			data[HcclJson] = hccls[i]
 		}
-		err := kube.CreateOrUpdateConfigMap(cmName, jobInfo.NameSpace, data, getDefaultLabel())
+		err := kube.CreateOrUpdateConfigMap(cmName, jobInfo.NameSpace, data, getDefaultLabel(jobInfo.ResourceType))
 		if err != nil {
 			hwlog.RunLog.Errorf("create or update configmap failed, err: %v", err)
 			result = false
@@ -151,8 +151,11 @@ func deleteCm(jobInfo constant.JobInfo) bool {
 	return true
 }
 
-func getDefaultLabel() map[string]string {
+func getDefaultLabel(resourceType string) map[string]string {
 	label := make(map[string]string)
+	if resourceType != api.NPULowerCase {
+		label[api.AtlasTaskLabel] = api.Ascend910MinuxCase
+	}
 	label[configmapLabel] = "true"
 	return label
 }

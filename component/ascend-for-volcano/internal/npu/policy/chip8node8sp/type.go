@@ -69,7 +69,7 @@ const (
 )
 
 type superPodInfo struct {
-	firstLevel     remainderTop
+	firstLevel     remainderTopType
 	countVSuperPod int
 }
 
@@ -79,7 +79,7 @@ type vPodIdRecorder struct {
 	rightIndex int
 }
 
-type remainderTop = [][][]superPod
+type remainderTopType = [][][]superPod
 
 type superPod map[string]plugin.NPUNode
 

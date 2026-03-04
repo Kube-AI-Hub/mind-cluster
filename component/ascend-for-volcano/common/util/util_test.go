@@ -713,6 +713,11 @@ func TestGetDeviceType(t *testing.T) {
 			devList: map[string]string{"invalid key": "Ascend910-0"},
 			want:    Ascend910,
 		},
+		{
+			name:    "05 device type is npu",
+			devList: map[string]string{NPUCardName: NPULowerCase},
+			want:    NPULowerCase,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -968,7 +973,8 @@ const (
 func TestGetAvailableDevInfo(t *testing.T) {
 	t.Run("test func GetAvailableDevInfo success", func(t *testing.T) {
 		availDevKey, availDevList := GetAvailableDevInfo(FakeDeviceList())
-		if !reflect.DeepEqual(availDevKey, NPU910CardName) || !reflect.DeepEqual(strings.Join(availDevList, ","), availNPU) {
+		if !reflect.DeepEqual(availDevKey, NPU910CardName) || !reflect.DeepEqual(strings.Join(availDevList, ","),
+			availNPU) {
 			t.Errorf("get available device info key = %v, want %v; value = %v, want = %v",
 				availDevKey, NPU910CardName, availDevList, availNPU)
 		}
@@ -1051,7 +1057,8 @@ func TestIsStrategyInSubHealthyStrategse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			isStrategyInSubHealthyStrategse := IsStrategyInSubHealthyStrategs(tt.strategy)
 			if !(isStrategyInSubHealthyStrategse == tt.want) {
-				t.Errorf("is strategy in sub healthy strategies = %v, want %v", isStrategyInSubHealthyStrategse, tt.want)
+				t.Errorf("is strategy in sub healthy strategies = %v, want %v", isStrategyInSubHealthyStrategse,
+					tt.want)
 			}
 		})
 	}

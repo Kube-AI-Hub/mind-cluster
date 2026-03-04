@@ -153,6 +153,17 @@ func TestAddPod(t *testing.T) {
 			err := gen.AddPod(pod)
 			convey.So(err, convey.ShouldBeNil)
 		})
+		convey.Convey("06-pod with PodNPUDeviceAnno fallback should return nil", func() {
+			npuPod := &v1.Pod{}
+			npuPod.UID = "npu-pod-uid"
+			npuPod.Status.PodIP = "192.168.1.2"
+			npuPod.Annotations = map[string]string{
+				api.PodNPUDeviceAnno: newInstanceString("npu-pod", "127.0.0.2"),
+				api.PodRankIndexAnno: "1",
+			}
+			err := gen.AddPod(npuPod)
+			convey.So(err, convey.ShouldBeNil)
+		})
 	})
 }
 
