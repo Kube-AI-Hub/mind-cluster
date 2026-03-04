@@ -672,48 +672,93 @@ func TestGetSlotId2(t *testing.T) {
 	)
 }
 
-func TestLoadConfigFromFile(t *testing.T) {
-	convey.Convey("TestLoadConfigFromFile", t, func() {
-		patch := gomonkey.ApplyFunc(utils.LoadFile, func(path string) ([]byte, error) {
-			return nil, fmt.Errorf("load file error")
-		})
-		defer patch.Reset()
-		df := DpuFilter{}
-		err := df.loadDpuConfigFromFile()
-		convey.So(err, convey.ShouldBeError)
-		convey.So(err.Error(), convey.ShouldEqual, "load config from file error:load file error")
-	})
+type loadDpuConfigFromFileTestCase struct {
+	name               string
+	mockLoadFileFunc   func(string) ([]byte, error)
+	expectedErrMsg     string
+	expectedUserConfig UserDpuConfig
+}
 
-	convey.Convey("TestLoadConfigFromFile2", t, func() {
-		patch := gomonkey.ApplyFunc(utils.LoadFile, func(path string) ([]byte, error) {
-			return []byte("invalid json"), nil
-		})
-		defer patch.Reset()
-		df := DpuFilter{}
-		err := df.loadDpuConfigFromFile()
-		convey.So(err, convey.ShouldBeError)
-		convey.So(err.Error(), convey.ShouldStartWith, "parse config from file error:")
-	})
-
-	convey.Convey("TestLoadConfigFromFile3", t, func() {
-		config := ConfigList{
-			UserDpuConfigList: []UserDpuConfig{
-				{
-					Selectors: &DeviceSelectors{},
-					BusType:   "",
-				},
+func buildLoadDpuConfigFromFileTestCases1() []loadDpuConfigFromFileTestCase {
+	return []loadDpuConfigFromFileTestCase{
+		{
+			name:               "load file failed (file not exist)",
+			mockLoadFileFunc:   func(path string) ([]byte, error) { return nil, errors.New("load file error") },
+			expectedErrMsg:     "load config from file error:load file error",
+			expectedUserConfig: UserDpuConfig{},
+		},
+		{
+			name:               "json unmarshal failed (invalid format)",
+			mockLoadFileFunc:   func(path string) ([]byte, error) { return []byte("invalid json"), nil },
+			expectedErrMsg:     "parse config from file error:",
+			expectedUserConfig: UserDpuConfig{},
+		},
+		{
+			name: "config list is empty",
+			mockLoadFileFunc: func(path string) ([]byte, error) {
+				emptyConfigList := ConfigList{UserDpuConfigList: []UserDpuConfig{}}
+				content, err := json.Marshal(emptyConfigList)
+				return content, err
 			},
+			expectedErrMsg:     "config missing parameter, dpu devices find is not enable",
+			expectedUserConfig: UserDpuConfig{},
+		},
+	}
+}
+
+func buildLoadDpuConfigFromFileTestCases2() []loadDpuConfigFromFileTestCase {
+	validSelectors := &DeviceSelectors{Vendor: []string{"huawei"}, DeviceIds: []string{"0x1234"}}
+	validUserConfig := UserDpuConfig{BusType: busTypePcie, Selectors: validSelectors}
+	validConfigList := ConfigList{UserDpuConfigList: []UserDpuConfig{validUserConfig}}
+	return []loadDpuConfigFromFileTestCase{
+		{
+			name: "invalid busType (usb)",
+			mockLoadFileFunc: func(path string) ([]byte, error) {
+				invalidConfig := ConfigList{
+					UserDpuConfigList: []UserDpuConfig{{BusType: "usb", Selectors: validSelectors}},
+				}
+				return json.Marshal(invalidConfig)
+			},
+			expectedErrMsg:     "invalid busType: usb",
+			expectedUserConfig: UserDpuConfig{},
+		},
+		{
+			name: "vendor and deviceIds are empty",
+			mockLoadFileFunc: func(path string) ([]byte, error) {
+				invalidConfig := ConfigList{
+					UserDpuConfigList: []UserDpuConfig{{
+						BusType: busTypeUb, Selectors: &DeviceSelectors{Vendor: []string{}, DeviceIds: []string{}}}},
+				}
+				return json.Marshal(invalidConfig)
+			},
+			expectedErrMsg:     "no vendor and deviceIds found, dpu devices find is not enable",
+			expectedUserConfig: UserDpuConfig{},
+		},
+		{
+			name:             "config is valid",
+			mockLoadFileFunc: func(path string) ([]byte, error) { return json.Marshal(validConfigList) },
+			expectedErrMsg:   "", expectedUserConfig: validUserConfig,
+		},
+	}
+}
+
+func TestLoadDpuConfigFromFile(t *testing.T) {
+	convey.Convey("Test loadDpuConfigFromFile", t, func() {
+		tests := append(buildLoadDpuConfigFromFileTestCases1(), buildLoadDpuConfigFromFileTestCases2()...)
+		for _, tt := range tests {
+			convey.Convey(tt.name, func() {
+				dpuFilter := &DpuFilter{}
+				patchLoadFile := gomonkey.ApplyFunc(utils.LoadFile, tt.mockLoadFileFunc)
+				defer patchLoadFile.Reset()
+				err := dpuFilter.loadDpuConfigFromFile()
+				if tt.expectedErrMsg != "" {
+					convey.So(err.Error(), convey.ShouldContainSubstring, tt.expectedErrMsg)
+				} else {
+					convey.So(err, convey.ShouldBeNil)
+				}
+				convey.So(dpuFilter.UserConfig, convey.ShouldResemble, tt.expectedUserConfig)
+			})
 		}
-		jsonContent, err0 := json.Marshal(config)
-		convey.So(err0, convey.ShouldBeNil)
-		patch := gomonkey.ApplyFunc(utils.LoadFile, func(path string) ([]byte, error) {
-			return jsonContent, nil
-		})
-		defer patch.Reset()
-		df := DpuFilter{}
-		err := df.loadDpuConfigFromFile()
-		convey.So(err, convey.ShouldBeError)
-		convey.So(err.Error(), convey.ShouldEqual, "config missing parameter, dpu devices find is not enable")
 	})
 }
 
