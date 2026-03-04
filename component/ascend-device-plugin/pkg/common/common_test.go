@@ -1116,3 +1116,82 @@ func TestConvertSchedulingPolicyToIntStr(t *testing.T) {
 		}
 	})
 }
+
+type getDeviceFromPodAnnotationTestCase struct {
+	name               string
+	mockRealCardType   string
+	mockStatDockerPath func() (os.FileInfo, error)
+	mockStatDevicePath func() (os.FileInfo, error)
+	expectedPath       string
+	expectedErr        error
+}
+
+func buildGetDeviceFromPodAnnotationTestCases() []getDeviceFromPodAnnotationTestCase {
+	testErrFileNotExist := errors.New("stat /dev/hiai_manager: no such file or directory")
+	return []getDeviceFromPodAnnotationTestCase{
+		{
+			name:               "Ascend310B card + docker path exists",
+			mockRealCardType:   api.Ascend310B,
+			mockStatDockerPath: func() (os.FileInfo, error) { return nil, nil },
+			mockStatDevicePath: func() (os.FileInfo, error) { return nil, nil },
+			expectedPath:       HiAIManagerDeviceDocker,
+			expectedErr:        nil,
+		},
+		{
+			name:               "Ascend310B card + docker path not exist + device path exists",
+			mockRealCardType:   api.Ascend310B,
+			mockStatDockerPath: func() (os.FileInfo, error) { return nil, testErrFileNotExist },
+			mockStatDevicePath: func() (os.FileInfo, error) { return nil, nil },
+			expectedPath:       HiAIManagerDevice,
+			expectedErr:        nil,
+		},
+		{
+			name:               "non-Ascend310B card + device path exists",
+			mockRealCardType:   api.Ascend910,
+			mockStatDockerPath: func() (os.FileInfo, error) { return nil, nil },
+			mockStatDevicePath: func() (os.FileInfo, error) { return nil, nil },
+			expectedPath:       HiAIManagerDevice,
+			expectedErr:        nil,
+		},
+		{
+			name:               "device path not exist",
+			mockRealCardType:   api.Ascend910,
+			mockStatDockerPath: func() (os.FileInfo, error) { return nil, nil },
+			mockStatDevicePath: func() (os.FileInfo, error) { return nil, testErrFileNotExist },
+			expectedPath:       "",
+			expectedErr:        testErrFileNotExist,
+		},
+	}
+}
+
+func TestGetDavinciManagerPath(t *testing.T) {
+	convey.Convey("Test getDavinciManagerPath", t, func() {
+		tests := buildGetDeviceFromPodAnnotationTestCases()
+		for _, tt := range tests {
+			convey.Convey(tt.name, func() {
+				patchCardType := gomonkey.ApplyGlobalVar(&ParamOption, Option{RealCardType: tt.mockRealCardType})
+				defer patchCardType.Reset()
+				patchStat := gomonkey.ApplyFunc(os.Stat,
+					func(path string) (os.FileInfo, error) {
+						switch path {
+						case HiAIManagerDeviceDocker:
+							return tt.mockStatDockerPath()
+						case HiAIManagerDevice:
+							return tt.mockStatDevicePath()
+						default:
+							return nil, os.ErrNotExist
+						}
+					})
+				defer patchStat.Reset()
+				gotPath, gotErr := getDavinciManagerPath()
+				convey.So(gotPath, convey.ShouldEqual, tt.expectedPath)
+
+				if tt.expectedErr == nil {
+					convey.So(gotErr, convey.ShouldBeNil)
+				} else {
+					convey.So(gotErr, convey.ShouldNotBeNil)
+				}
+			})
+		}
+	})
+}
