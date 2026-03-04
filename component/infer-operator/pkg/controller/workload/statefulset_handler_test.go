@@ -401,7 +401,7 @@ func TestStatefulSetHandlerListWorkLoads(t *testing.T) {
 				common.InstanceSetNameLabelKey:  "test-role",
 			}
 			ctx := context.Background()
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(result, convey.ShouldNotBeNil)
 			convey.So(len(result.Items), convey.ShouldEqual, 1)
@@ -415,7 +415,7 @@ func TestStatefulSetHandlerListWorkLoads(t *testing.T) {
 				common.InstanceSetNameLabelKey:  "test-role",
 			}
 			ctx := context.Background()
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(result, convey.ShouldNotBeNil)
 			convey.So(len(result.Items), convey.ShouldEqual, 0)
@@ -434,7 +434,7 @@ func TestStatefulSetHandlerListWorkLoads(t *testing.T) {
 			patches := gomonkey.ApplyMethodReturn(handler.client, "List", mockErr)
 			defer patches.Reset()
 
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldNotBeNil)
 			convey.So(result, convey.ShouldBeNil)
 		})

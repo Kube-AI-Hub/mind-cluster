@@ -60,7 +60,7 @@ func (d *DeploymentHandler) CheckOrCreateWorkLoad(ctx context.Context,
 	// 2. fetch workload
 	selectLabels := make(map[string]string)
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
-	deployList, err := d.ListWorkLoads(ctx, selectLabels)
+	deployList, err := d.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (d *DeploymentHandler) DeleteExtraWorkLoad(
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
 	delete(selectLabels, common.InstanceIndexLabelKey)
 	hwlog.RunLog.Infof("try to delete extra instances, labels: %v", selectLabels)
-	deployList, err := d.ListWorkLoads(ctx, selectLabels)
+	deployList, err := d.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (d *DeploymentHandler) GetWorkLoadReadyReplicas(
 	selectLabels := make(map[string]string)
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
 	delete(selectLabels, common.InstanceIndexLabelKey)
-	deployList, err := d.ListWorkLoads(ctx, selectLabels)
+	deployList, err := d.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return readyReplicas, err
 	}
@@ -291,7 +291,11 @@ func (d *DeploymentHandler) deleteExtraService(
 	return nil
 }
 
-func (d *DeploymentHandler) ListWorkLoads(ctx context.Context, selectLabels map[string]string) (*appsv1.DeploymentList, error) {
+// ListWorkLoads lists deployments with the specified labels in the given namespace
+func (d *DeploymentHandler) ListWorkLoads(
+	ctx context.Context,
+	selectLabels map[string]string,
+	namespace string) (*appsv1.DeploymentList, error) {
 	deployList := &appsv1.DeploymentList{}
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchLabels: selectLabels,
@@ -300,7 +304,8 @@ func (d *DeploymentHandler) ListWorkLoads(ctx context.Context, selectLabels map[
 		hwlog.RunLog.Errorf("Failed to create selector: %v", err)
 		return nil, common.NewRequeueError(err.Error())
 	}
-	if err = d.client.List(ctx, deployList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
+	if err = d.client.List(ctx, deployList,
+		client.MatchingLabelsSelector{Selector: selector}, client.InNamespace(namespace)); err != nil {
 		hwlog.RunLog.Errorf("Failed to list Deployments: %v", err)
 		return nil, common.NewRequeueError(err.Error())
 	}

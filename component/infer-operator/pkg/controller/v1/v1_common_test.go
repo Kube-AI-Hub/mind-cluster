@@ -161,6 +161,7 @@ func CreateTestService(name, namespace string) *corev1.Service {
 // GetTestIndexer returns a test InstanceIndexer object.
 func GetTestIndexer(serviceName, instanceSetKey, instanceIndex string) common.InstanceIndexer {
 	return common.InstanceIndexer{
+		Namespace:      "default",
 		ServiceName:    serviceName,
 		InstanceSetKey: instanceSetKey,
 		InstanceIndex:  instanceIndex,

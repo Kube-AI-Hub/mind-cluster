@@ -109,6 +109,7 @@ func (r *InstanceSetReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 func (r *InstanceSetReconciler) reconcileWorkLoads(ctx context.Context, instanceSet *apiv1.InstanceSet) error {
 	indexer := common.InstanceIndexer{
+		Namespace:      instanceSet.Namespace,
 		ServiceName:    instanceSet.Labels[common.InferServiceNameLabelKey],
 		InstanceSetKey: instanceSet.Labels[common.InstanceSetNameLabelKey],
 	}

@@ -18,6 +18,8 @@ package common
 
 // InstanceIndexer is a structure used to identify the index information of inference service instances
 type InstanceIndexer struct {
+	// Namespace is the namespace of the inference service instance
+	Namespace string
 	// Service name, identifying owner InferService
 	ServiceName string
 	// Instance set key, used to associate the same group of instances

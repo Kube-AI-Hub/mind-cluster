@@ -72,7 +72,7 @@ func (s *StatefulSetHandler) CheckOrCreateWorkLoad(
 	// 3. fetch workload
 	selectLabels := make(map[string]string)
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
-	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels)
+	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (s *StatefulSetHandler) DeleteExtraWorkLoad(
 	selectLabels := make(map[string]string)
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
 	delete(selectLabels, common.InstanceIndexLabelKey)
-	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels)
+	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (s *StatefulSetHandler) GetWorkLoadReadyReplicas(
 	selectLabels := make(map[string]string)
 	selectLabels = common.AddLabelsFromIndexer(selectLabels, indexer)
 	delete(selectLabels, common.InstanceIndexLabelKey)
-	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels)
+	statefulsetList, err := s.ListWorkLoads(ctx, selectLabels, indexer.Namespace)
 	if err != nil {
 		return readyReplicas, err
 	}
@@ -275,7 +275,11 @@ func (s *StatefulSetHandler) deleteExtraService(
 	return nil
 }
 
-func (s *StatefulSetHandler) ListWorkLoads(ctx context.Context, selectLabels map[string]string) (*appsv1.StatefulSetList, error) {
+// ListWorkLoads lists deployments with the specified labels in the given namespace
+func (s *StatefulSetHandler) ListWorkLoads(
+	ctx context.Context,
+	selectLabels map[string]string,
+	namespace string) (*appsv1.StatefulSetList, error) {
 	statefulsetList := &appsv1.StatefulSetList{}
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchLabels: selectLabels,
@@ -284,7 +288,8 @@ func (s *StatefulSetHandler) ListWorkLoads(ctx context.Context, selectLabels map
 		hwlog.RunLog.Errorf("Failed to convert label selector to selector: %v", err)
 		return statefulsetList, common.NewRequeueError(err.Error())
 	}
-	if err = s.client.List(ctx, statefulsetList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
+	if err = s.client.List(ctx, statefulsetList,
+		client.MatchingLabelsSelector{Selector: selector}, client.InNamespace(namespace)); err != nil {
 		hwlog.RunLog.Errorf("Failed to list extra statefulsets: %v", err)
 		return nil, common.NewRequeueError(err.Error())
 	}

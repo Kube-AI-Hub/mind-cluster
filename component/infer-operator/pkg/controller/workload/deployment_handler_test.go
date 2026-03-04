@@ -449,7 +449,7 @@ func TestDeploymentHandlerListWorkLoads(t *testing.T) {
 			handler := NewDeploymentHandler(fakeClient)
 
 			ctx := context.Background()
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(result, convey.ShouldNotBeNil)
 			convey.So(len(result.Items), convey.ShouldEqual, 1)
@@ -460,7 +460,7 @@ func TestDeploymentHandlerListWorkLoads(t *testing.T) {
 			handler := NewDeploymentHandler(fakeClient)
 
 			ctx := context.Background()
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(result, convey.ShouldNotBeNil)
 			convey.So(len(result.Items), convey.ShouldEqual, 0)
@@ -475,7 +475,7 @@ func TestDeploymentHandlerListWorkLoads(t *testing.T) {
 			defer patches.Reset()
 
 			ctx := context.Background()
-			result, err := handler.ListWorkLoads(ctx, selectLabels)
+			result, err := handler.ListWorkLoads(ctx, selectLabels, "default")
 			convey.So(err, convey.ShouldNotBeNil)
 			convey.So(result, convey.ShouldBeNil)
 		})
