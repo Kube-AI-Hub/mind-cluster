@@ -296,7 +296,28 @@ func (hdm *HwDevManager) getNewNodeLabel(node *v1.Node) (map[string]string, erro
 	if common.IsContainAll300IDuo() {
 		newLabelMap[common.InferCardKey] = api.A300IDuoLabel
 	}
+	hdm.addTopologyLabel(newLabelMap)
+
 	return newLabelMap, nil
+}
+
+func (hdm *HwDevManager) addTopologyLabel(newLabelMap map[string]string) {
+	if newLabelMap == nil {
+		hwlog.RunLog.Errorf("label map is nil")
+		return
+	}
+	if common.ParamOption.RealCardType == api.Ascend910A3 {
+		superPodId := hdm.manager.GetSuperPodID()
+		newLabelMap[npuCommon.TopoLabelSuperPodId] = strconv.Itoa(int(superPodId))
+		hwlog.RunLog.Infof("A3 device add superid label: %d", superPodId)
+	}
+	if common.ParamOption.RealCardType == api.Ascend910A5 {
+		superPodId := hdm.manager.GetSuperPodID()
+		rackId := hdm.manager.GetRackID()
+		newLabelMap[npuCommon.TopoLabelSuperPodId] = strconv.Itoa(int(superPodId))
+		newLabelMap[npuCommon.TopoLabelRackId] = strconv.Itoa(int(rackId))
+		hwlog.RunLog.Infof("A5 device add superpodid label: %d, rackid label: %d", superPodId, rackId)
+	}
 }
 
 func (hdm *HwDevManager) getNpuBaseInfo() map[string]*common.NpuBaseInfo {

@@ -56,6 +56,8 @@ const (
 	expectedMemory    = 32768
 	ascend910LogicID0 = api.Ascend910MinuxPrefix + "0"
 	ascend910LogicID1 = api.Ascend910MinuxPrefix + "1"
+	testSuperPodId = int32(2)
+	testRackId     = int32(4)
 )
 
 var testErr = errors.New("test")
@@ -308,6 +310,58 @@ func TestGetNewNodeLabel(t *testing.T) {
 		convey.So(labelMap, convey.ShouldResemble, map[string]string{common.InferCardKey: api.A300IDuoLabel,
 			common.ChipNameLabel: "testName", api.NPUChipMemoryLabel: "0G"})
 		convey.So(err, convey.ShouldBeNil)
+	})
+}
+
+// TestAddTopologyLabel_NilMap_A3 tests addTopologyLabel with nil map and A3 device type
+func TestAddTopologyLabel_NilMap_A3(t *testing.T) {
+	convey.Convey("Test addTopologyLabel: newLabelMap is nil and RealCardType is A3", t, func() {
+		hdm := &HwDevManager{manager: device.NewHwAscend910Manager()}
+		common.ParamOption.RealCardType = api.Ascend910A3
+
+		mockGetSuperPodInfo := gomonkey.ApplyMethodReturn(device.NewHwAscend910Manager(),
+			"GetSuperPodID", testSuperPodId)
+		defer mockGetSuperPodInfo.Reset()
+
+		newLabelMap := make(map[string]string)
+		hdm.addTopologyLabel(newLabelMap)
+		convey.So(newLabelMap[npuCommon.TopoLabelSuperPodId], convey.ShouldEqual, strconv.Itoa(int(testSuperPodId)))
+	})
+}
+
+// TestAddTopologyLabel_ExistingMap_A3 tests addTopologyLabel with existing map and A3 device type
+func TestAddTopologyLabel_ExistingMap_A3(t *testing.T) {
+	convey.Convey("Test addTopologyLabel: newLabelMap is not nil and RealCardType is A3", t, func() {
+		hdm := &HwDevManager{manager: device.NewHwAscend910Manager()}
+		common.ParamOption.RealCardType = api.Ascend910A3
+
+		mockGetSuperPodInfo := gomonkey.ApplyMethodReturn(device.NewHwAscend910Manager(),
+			"GetSuperPodID", testSuperPodId)
+		defer mockGetSuperPodInfo.Reset()
+
+		newLabelMap := map[string]string{"existing-label": "value"}
+		hdm.addTopologyLabel(newLabelMap)
+		convey.So(newLabelMap[npuCommon.TopoLabelSuperPodId], convey.ShouldEqual, strconv.Itoa(int(testSuperPodId)))
+		convey.So(newLabelMap["existing-label"], convey.ShouldEqual, "value")
+	})
+}
+
+// TestAddTopologyLabel_ExistingMap_A5 tests addTopologyLabel with existing map and A5 device type
+func TestAddTopologyLabel_ExistingMap_A5(t *testing.T) {
+	convey.Convey("Test addTopologyLabel: newLabelMap is not nil and RealCardType is A5", t, func() {
+		hdm := &HwDevManager{manager: device.NewHwAscend910Manager()}
+		common.ParamOption.RealCardType = api.Ascend910A5
+
+		mockGetSuperPodInfo := gomonkey.ApplyMethodReturn(device.NewHwAscend910Manager(),
+			"GetSuperPodID", testSuperPodId).
+			ApplyMethodReturn(device.NewHwAscend910Manager(), "GetRackID", testRackId)
+		defer mockGetSuperPodInfo.Reset()
+
+		newLabelMap := map[string]string{"existing-label": "value"}
+		hdm.addTopologyLabel(newLabelMap)
+		convey.So(newLabelMap[npuCommon.TopoLabelSuperPodId], convey.ShouldEqual, strconv.Itoa(int(testSuperPodId)))
+		convey.So(newLabelMap[npuCommon.TopoLabelRackId], convey.ShouldEqual, strconv.Itoa(int(testRackId)))
+		convey.So(newLabelMap["existing-label"], convey.ShouldEqual, "value")
 	})
 }
 

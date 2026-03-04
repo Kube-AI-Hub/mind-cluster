@@ -284,3 +284,10 @@ const (
 	// DefaultTimeout is the default timeout
 	DefaultTimeout = 1
 )
+
+const (
+	// TopoLabelSuperPodId topological label for super-pod id
+	TopoLabelSuperPodId = "huawei.com/topotree.superpodid"
+	// TopoLabelRackId topological label for rack id
+	TopoLabelRackId = "huawei.com/topotree.rackid"
+)
