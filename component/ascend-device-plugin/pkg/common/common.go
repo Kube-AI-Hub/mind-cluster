@@ -50,6 +50,7 @@ var (
 		api.Ascend910Lowercase:  regexp.MustCompile(`^` + api.Ascend910 + `-\d+`),
 		api.Ascend310Lowercase:  regexp.MustCompile(`^` + api.Ascend310 + `-\d+`),
 		api.Ascend310PLowercase: regexp.MustCompile(`^` + api.Ascend310P + `-\d+`),
+		api.NPULowerCase:        regexp.MustCompile(`^` + api.NPULowerCase + `-\d+`),
 	}
 	// updateTriggerChan is a channel to trigger device info update
 	updateTriggerChan = make(chan struct{}, 1)

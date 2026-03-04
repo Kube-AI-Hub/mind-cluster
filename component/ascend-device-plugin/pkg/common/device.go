@@ -359,9 +359,13 @@ func labelToSets(deviceInfo []string) sets.String {
 // for device info, check device format, must Ascend910-0,Ascend910-1 and more
 func deviceInfoToSets(deviceInfo []string) sets.String {
 	// pattern no need to defined as global variable, only used here
+	key := api.Ascend910Lowercase
+	if ParamOption.RealCardType == api.Ascend910A5 {
+		key = api.NPULowerCase
+	}
 	deviceSets := sets.String{}
 	for _, device := range deviceInfo {
-		if match := GetPattern()[api.Ascend910Lowercase].MatchString(device); !match {
+		if match := GetPattern()[key].MatchString(device); !match {
 			hwlog.RunLog.Warnf("device %s is illegal", device)
 			continue
 		}
