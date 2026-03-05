@@ -223,6 +223,7 @@ func testCanAddNodeToSuperPod2() {
 
 func TestDeleteNodeInRackMap(t *testing.T) {
 	convey.Convey("TestDeleteNodeInRackMap case 1", t, func() {
+		superPodManager.snMap = make(map[string]*api.SuperPodDevice)
 		superPodManager.snMap["0"] = nil
 		defer func() { superPodManager.snMap = make(map[string]*api.SuperPodDevice, initSuperPodNum) }()
 		DeleteNodeInRackMap("1", nil)

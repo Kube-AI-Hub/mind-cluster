@@ -1367,3 +1367,25 @@ func (d *DeviceManager) SetSuperPodStatus(logicID int32, sdid, status uint32) er
 	}
 	return err
 }
+
+// GetUrmaDeviceCount for npu
+func (d *DeviceManager) GetUrmaDeviceCount(logicID int32) (int32, error) {
+	return 0, nil
+}
+
+// GetUrmaDevEidList for npu
+func (d *DeviceManager) GetUrmaDevEidList(logicID int32, index int32) (*common.UrmaDeviceInfo, error) {
+	return &common.UrmaDeviceInfo{}, nil
+}
+
+// GetUrmaDevEidListAll for npu
+func (d *DeviceManager) GetUrmaDevEidListAll(logicID int32) ([]common.UrmaDeviceInfo, error) {
+	return []common.UrmaDeviceInfo{
+		{
+			EidCount: 1,
+			EidInfos: []common.UrmaEidInfo{
+				{Eid: common.Eid{Raw: [common.EidByteSize]byte{}}},
+			},
+		},
+	}, nil
+}

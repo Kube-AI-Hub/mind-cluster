@@ -49,7 +49,7 @@ const (
 	// DiagVersionA5 is the fault detection A5 string
 	DiagVersionA5 = "npu"
 	// DiagVersionServer is the inference server
-	DiagVersionServer = "850-SupePod-Atlas-8"
+	DiagVersionServer = "850-SuperPod-Atlas-8"
 
 	logPrintInterval = 10
 	// NpuType is the Network Topology Type

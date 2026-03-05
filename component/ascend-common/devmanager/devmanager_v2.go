@@ -885,3 +885,18 @@ func (d *DeviceManagerV2) SetSuperPodStatus(logicID int32, sdid, status uint32) 
 	return fmt.Errorf("set super pod status failed, logicID: %d, sdid: %d, status: %d, error: %v",
 		logicID, sdid, status, errNotSupportedInDcmiV2)
 }
+
+// GetUrmaDeviceCount get urma device count by dcmiv2
+func (d *DeviceManagerV2) GetUrmaDeviceCount(logicID int32) (int32, error) {
+	return d.DcMgr.DcGetUrmaDeviceCount(logicID)
+}
+
+// GetUrmaDevEidList get urma device eid list with index by dcmiv2
+func (d *DeviceManagerV2) GetUrmaDevEidList(logicID int32, index int32) (*common.UrmaDeviceInfo, error) {
+	return d.DcMgr.DcGetUrmaDevEidList(logicID, index)
+}
+
+// GetUrmaDevEidListAll get urma device eid list all by dcmiv2
+func (d *DeviceManagerV2) GetUrmaDevEidListAll(logicID int32) ([]common.UrmaDeviceInfo, error) {
+	return d.DcMgr.DcGetUrmaDevEidListAll(logicID)
+}

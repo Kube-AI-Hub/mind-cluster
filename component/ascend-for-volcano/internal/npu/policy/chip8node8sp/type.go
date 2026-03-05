@@ -44,9 +44,9 @@ type chip8node8sp struct {
 
 const (
 	// AcceleratorType super pod accelerator type
-	AcceleratorType = "850-SupePod-Atlas-8"
+	AcceleratorType = "850-SuperPod-Atlas-8"
 	// AcceleratorTypeTrain super pod accelerator type for train server
-	AcceleratorTypeTrain = "850-SupePod-Atlas-8"
+	AcceleratorTypeTrain = "850-SuperPod-Atlas-8"
 	// InferSchedulerName name of infer server scheduler
 	InferSchedulerName = "huawei.com/Ascend910" + AcceleratorType
 	// TrainSchedulerName name of train scheduler
