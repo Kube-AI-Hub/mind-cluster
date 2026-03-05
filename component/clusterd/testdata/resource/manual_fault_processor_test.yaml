@@ -1,4 +1,4 @@
-# device info cm: unhealthy card is Ascend910-5
+# device info cm: unhealthy card is node1 Ascend910-5
 mindx-dl-deviceinfo-node1:
   CmName: "mindx-dl-deviceinfo-node1"
   DeviceList:

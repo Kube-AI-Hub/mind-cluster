@@ -1,11 +1,30 @@
+/* Copyright(C) 2026. Huawei Technologies Co.,Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+// Package manualfault is test for process manually separate faults
 package manualfault
 
 import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/smartystreets/goconvey/convey"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	"clusterd/pkg/common/constant"
 	"clusterd/pkg/common/util"
@@ -13,6 +32,7 @@ import (
 	"clusterd/pkg/domain/faultdomain"
 	"clusterd/pkg/domain/manualfault"
 	pod2 "clusterd/pkg/domain/pod"
+	"clusterd/pkg/domain/podgroup"
 )
 
 const (
@@ -41,6 +61,10 @@ var (
 
 func TestProcessor(t *testing.T) {
 	preparePodStorage()
+	var p1 = gomonkey.ApplyFuncReturn(podgroup.GetPodGroup, v1beta1.PodGroup{
+		ObjectMeta: v1.ObjectMeta{Name: pgName1},
+	})
+	defer p1.Reset()
 	convey.Convey("test func 'Process', manually separate npu enabled is false", t, testCloseManualSep)
 	convey.Convey("test func 'Process', input type is invalid", t, testInputIsNil)
 	convey.Convey("test func 'Process', load from manual cm", t, testLoadFromManualCm)
@@ -128,10 +152,14 @@ func testWhenHaveJob() {
 	defer pod2.DeletePod(podDemo2)
 
 	content := constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm]{
-		AllConfigmap:    faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1),
+		AllConfigmap:    updateFaultReceiveTime(faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1)),
 		UpdateConfigmap: nil,
 	}
 	_ = ManualFaultProcessor.Process(content).(constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm])
+	jobFaults := manualfault.JobFaultMgr.GetFaultsByJobId(job1)
+	convey.So(len(jobFaults), convey.ShouldEqual, len0)
+	jobFaults = manualfault.JobFaultMgr.GetFaultsByJobId(job2)
+	convey.So(len(jobFaults), convey.ShouldEqual, len1)
 }
 
 func testIncrementFault() {
@@ -146,13 +174,38 @@ func testIncrementFault() {
 		pod2.DeletePod(podDemo4)
 	}()
 
-	// node1 Ascend910-5, Ascend910-6 and node2 Ascend910-2 have fault
+	// increment fault is node1 Ascend910-6 and node2 Ascend910-2
 	content := constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm]{
-		AllConfigmap:    faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo2),
+		AllConfigmap:    updateFaultReceiveTime(faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo2)),
 		UpdateConfigmap: nil,
 	}
-	ManualFaultProcessor.nodeDeviceCmMap = faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1)
+	ManualFaultProcessor.nodeDeviceCmMap = updateFaultReceiveTime(faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1))
 	_ = ManualFaultProcessor.Process(content).(constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm])
+	jobFaults := manualfault.JobFaultMgr.GetFaultsByJobId(job1)
+	convey.So(len(jobFaults), convey.ShouldEqual, len2)
+}
+
+func updateFaultReceiveTime(allConfigmap map[string]*constant.AdvanceDeviceFaultCm) map[string]*constant.AdvanceDeviceFaultCm {
+	var newAllCm = make(map[string]*constant.AdvanceDeviceFaultCm)
+	for name, cm := range allConfigmap {
+		var faultDeviceLists = make(map[string][]constant.DeviceFault)
+		for node, faults := range cm.FaultDeviceList {
+			var newFaults []constant.DeviceFault
+			for _, fault := range faults {
+				var newFaultTimeAndLevel = make(map[string]constant.FaultTimeAndLevel)
+				for code, level := range fault.FaultTimeAndLevelMap {
+					level.FaultReceivedTime = time.Now().UnixMilli()
+					newFaultTimeAndLevel[code] = level
+				}
+				fault.FaultTimeAndLevelMap = newFaultTimeAndLevel
+				newFaults = append(newFaults, fault)
+			}
+			faultDeviceLists[node] = newFaults
+			cm.FaultDeviceList = faultDeviceLists
+		}
+		newAllCm[name] = cm
+	}
+	return newAllCm
 }
 
 func testSameFault() {
@@ -165,11 +218,13 @@ func testSameFault() {
 		pod2.DeletePod(podDemo3)
 	}()
 	content := constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm]{
-		AllConfigmap:    faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1),
+		AllConfigmap:    updateFaultReceiveTime(faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1)),
 		UpdateConfigmap: nil,
 	}
-	ManualFaultProcessor.nodeDeviceCmMap = faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1)
+	ManualFaultProcessor.nodeDeviceCmMap = updateFaultReceiveTime(faultdomain.GetAdvanceFaultCm[*constant.AdvanceDeviceFaultCm](oriDevInfo1))
 	_ = ManualFaultProcessor.Process(content).(constant.OneConfigmapContent[*constant.AdvanceDeviceFaultCm])
+	jobFaults := manualfault.JobFaultMgr.GetFaultsByJobId(job1)
+	convey.So(len(jobFaults), convey.ShouldEqual, len0)
 }
 
 func sortDeviceFaultList(advanceFaultCm map[string]*constant.AdvanceDeviceFaultCm) {
