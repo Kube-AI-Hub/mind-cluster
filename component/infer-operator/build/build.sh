@@ -28,7 +28,7 @@ arch=$(arch 2>&1)
 echo "Build Architecture is" "${arch}"
 
 OUTPUT_NAME="infer-operator"
-sed -i "s/infer-operator:.*/infer-operator:${build_version}/" "${TOP_DIR}"/build/${OUTPUT_NAME}.yaml
+sed -i "s/image: infer-operator:.*/image: infer-operator:${build_version}/" "${TOP_DIR}"/build/${OUTPUT_NAME}.yaml
 
 DOCKER_FILE_NAME="Dockerfile"
 

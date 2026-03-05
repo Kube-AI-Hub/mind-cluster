@@ -4,7 +4,7 @@ metadata:
   name: infer-operator-config
   namespace: mindx-dl
   labels:
-    infer.huawei.com/ascend-infer-operator: xxx
+    infer.huawei.com/ascend-infer-operator: infer-cm
 data:
   fault_handling: "true"
 ---
