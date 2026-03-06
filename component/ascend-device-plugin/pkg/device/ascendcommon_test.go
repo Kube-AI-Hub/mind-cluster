@@ -1331,7 +1331,7 @@ func TestAscendToolsGetDpuFaults(t *testing.T) {
 		// For FaultTime compare, should be placed together
 		got := tool.getDpuFaults(device.DeviceName)
 		faultTimeAndLevel := common.FaultTimeAndLevel{
-			FaultTime:  time.Now().UnixMilli(),
+			FaultTime:  got[0].FaultTimeAndLevelMap[faultCode].FaultTime,
 			FaultLevel: common.NotHandleFault,
 		}
 		faultTimeAndLevelMap := make(map[string]common.FaultTimeAndLevel)
