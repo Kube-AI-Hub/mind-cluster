@@ -88,7 +88,7 @@ func getAscend910Name() string {
 	return api.Ascend910
 }
 
-// NewHwAscend910Manager is used to create ascend 910 manager
+// NewHwAscend910Manager is used to create ascend npu manager
 func NewHwAscend910Manager() *HwAscend910Manager {
 	return &HwAscend910Manager{
 		AscendTools: AscendTools{
@@ -148,7 +148,7 @@ func (hnm *HwAscend910Manager) GetNPUs() (common.NpuAllInfo, error) {
 // GraceTolerance process training task with device fault gracefully
 func (hnm *HwAscend910Manager) GraceTolerance(ctx context.Context, classifyDevs map[string][]*common.NpuDevice) {
 	hotResetManagerInitOnce.Do(func() {
-		hnm.hotResetManager = NewHotResetManager(hnm.GetDeviceUsage(), len(classifyDevs[api.Ascend910]), hnm.boardId)
+		hnm.hotResetManager = NewHotResetManager(hnm.GetDeviceUsage(), len(classifyDevs[hnm.name]), hnm.boardId)
 		if hnm.hotResetManager == nil {
 			hwlog.RunLog.Error("hot reset manager is nil")
 			return
@@ -192,9 +192,9 @@ func (hnm *HwAscend910Manager) hotResetHandler(classifyDevs map[string][]*common
 	if isHotResetOn {
 		return nil
 	}
-	deviceList, ok := classifyDevs[api.Ascend910]
+	deviceList, ok := classifyDevs[hnm.name]
 	if !ok {
-		return fmt.Errorf("device list not found, %v", api.Ascend910)
+		return fmt.Errorf("device list not found, %v", hnm.name)
 	}
 	resetDevs := make([]*common.NpuDevice, 0, len(deviceList))
 	resetFaultInfos := make([]*common.DevFaultInfo, 0, len(deviceList))
@@ -326,9 +326,9 @@ func (hnm *HwAscend910Manager) startUpHotReset(classifyDevs map[string][]*common
 
 // setAllDevUnhealthyOnRing change the npu health status to unhealthy for all device on ring
 func (hnm *HwAscend910Manager) setAllDevUnhealthyOnRing(classifyDevs map[string][]*common.NpuDevice) error {
-	devStatusList, ok := classifyDevs[api.Ascend910]
+	devStatusList, ok := classifyDevs[hnm.name]
 	if !ok {
-		return fmt.Errorf("no ascend 910 device needed filter")
+		return fmt.Errorf("no ascend npu device needed filter")
 	}
 	clearDeviceStatus(devStatusList)
 	if !isHotResetOn {
@@ -442,9 +442,9 @@ func (hnm *HwAscend910Manager) handleResetProcess(classifyDevs map[string][]*com
 }
 
 func (hnm *HwAscend910Manager) checkFaultIsExist(devs map[string][]*common.NpuDevice, logicID int32) bool {
-	devList, ok := devs[api.Ascend910]
+	devList, ok := devs[hnm.name]
 	if !ok {
-		hwlog.RunLog.Error("no ascend 910 device, upgrade hot reset error fail")
+		hwlog.RunLog.Error("no ascend npu device, upgrade hot reset error fail")
 		// get error consider fault exist
 		return true
 	}
@@ -482,9 +482,9 @@ func (hnm *HwAscend910Manager) checkFaultIsExist(devs map[string][]*common.NpuDe
 func (hnm *HwAscend910Manager) upgradeHotResetError(classifyDevs map[string][]*common.NpuDevice,
 	npuDev *common.NpuDevice) {
 	isolateDevList = append(isolateDevList, npuDev.LogicID)
-	devStatusList, ok := classifyDevs[api.Ascend910]
+	devStatusList, ok := classifyDevs[hnm.name]
 	if !ok {
-		hwlog.RunLog.Error("no ascend 910 device, upgrade hot reset error fail")
+		hwlog.RunLog.Error("no ascend npu device, upgrade hot reset error fail")
 		return
 	}
 	resetDevNumOnce, err := hnm.hotResetManager.GetResetDevNumOnce()
@@ -638,7 +638,7 @@ func (hnm *HwAscend910Manager) getBusyChipListFromPod(podList *v1.PodList) []str
 		if pod.Status.Phase == v1.PodSucceeded {
 			continue
 		}
-		annotationTag := fmt.Sprintf("%s%s", api.ResourceNamePrefix, api.Ascend910)
+		annotationTag := fmt.Sprintf("%s%s", api.ResourceNamePrefix, hnm.name)
 		annotation, exist := pod.Annotations[annotationTag]
 		if !exist {
 			continue
@@ -753,7 +753,7 @@ func (hnm *HwAscend910Manager) update910NodeLabel(curNode *v1.Node, devRecoverLa
 
 func (hnm *HwAscend910Manager) getHealthAndRecoverDev(curDevStatusSet common.DevStatusSet, devRecoverDev,
 	recordUHDev sets.String) (string, string) {
-	device910 := curDevStatusSet.FreeHealthyDevice[getAscend910Name()]
+	device910 := curDevStatusSet.FreeHealthyDevice[hnm.name]
 	if common.ParamOption.AutoStowingDevs {
 		return "", common.ToString(device910, common.CommaSepDev)
 	}
@@ -834,7 +834,7 @@ func (hnm *HwAscend910Manager) toStandardDeviceFmt(devices sets.String) sets.Str
 
 	standardSets := sets.String{}
 	for devID := range devices {
-		deviceName := fmt.Sprintf("%s-%s", api.Ascend910, devID)
+		deviceName := fmt.Sprintf("%s-%s", hnm.name, devID)
 		standardSets.Insert(deviceName)
 	}
 
@@ -842,10 +842,10 @@ func (hnm *HwAscend910Manager) toStandardDeviceFmt(devices sets.String) sets.Str
 }
 
 func (hnm *HwAscend910Manager) updateHotResetCache(classifyDevs map[string][]*common.NpuDevice) error {
-	deviceList, ok := classifyDevs[api.Ascend910]
+	deviceList, ok := classifyDevs[hnm.name]
 	if !ok {
-		hwlog.RunLog.Error("ascend 910 device list no found")
-		return fmt.Errorf("ascend 910 device list not found")
+		hwlog.RunLog.Error("ascend npu device list no found")
+		return fmt.Errorf("ascend npu device list not found")
 	}
 	if err := hnm.updateUpgradeErrorInfo(classifyDevs); err != nil {
 		hwlog.RunLog.Errorf("fail to update upgrade error npu info, err: %v", err)
@@ -866,9 +866,9 @@ func (hnm *HwAscend910Manager) updateUpgradeErrorInfo(classifyDevs map[string][]
 	if len(isolateDevList) == 0 {
 		return nil
 	}
-	deviceList, ok := classifyDevs[api.Ascend910]
+	deviceList, ok := classifyDevs[hnm.name]
 	if !ok {
-		return fmt.Errorf("no Ascend 910 device found in cache")
+		return fmt.Errorf("no Ascend npu device found in cache")
 	}
 	for _, dev := range deviceList {
 		index := -1
@@ -1026,9 +1026,9 @@ func (hnm *HwAscend910Manager) isTaskInReset(taskName string) (bool, error) {
 // filterDevStatus filters the health of the device being reset and
 // the network health of the ring that the device is on
 func (hnm *HwAscend910Manager) filterDevStatus(classifyDevs map[string][]*common.NpuDevice) error {
-	devStatusList, ok := classifyDevs[api.Ascend910]
+	devStatusList, ok := classifyDevs[hnm.name]
 	if !ok {
-		return fmt.Errorf("no ascend 910 device needed filter")
+		return fmt.Errorf("no ascend npu device needed filter")
 	}
 	if common.ParamOption.RealCardType == api.Ascend910A3 &&
 		hnm.filterDevStatusForA3(devStatusList) == nil {
@@ -1718,9 +1718,9 @@ func (hnm *HwAscend910Manager) postProcess(taskName string, resetInfo *common.Ta
 
 func (hnm *HwAscend910Manager) refreshDevFaultInfo(devFaultInfo []*common.TaskDevInfo,
 	classifyDevs map[string][]*common.NpuDevice) error {
-	devStatusList, ok := classifyDevs[api.Ascend910]
+	devStatusList, ok := classifyDevs[hnm.name]
 	if !ok {
-		return fmt.Errorf("not found %s device type in %v", api.Ascend910, devStatusList)
+		return fmt.Errorf("not found %s device type in %v", hnm.name, devStatusList)
 	}
 
 	common.Synchronize = false

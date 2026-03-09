@@ -78,19 +78,19 @@ const (
 	// RasNetDetectOffStr the string of detect off
 	RasNetDetectOffStr = "off"
 	// Server8PTopoPath 8p server topo path
-	Server8PTopoPath = "/usr/local/Ascend/driver/topo/a5/server_8p.json"
+	Server8PTopoPath = "/usr/local/Ascend/driver/topo/950/server_8p.json"
 	// Pod1DTopoPath 1d pod topo path
-	Pod1DTopoPath = "/usr/local/Ascend/driver/topo/a5/superpod_1d.json"
+	Pod1DTopoPath = "/usr/local/Ascend/driver/topo/950/superpod_1d.json"
 	// Pod2DTopoPath 2d pod topo path
-	Pod2DTopoPath = "/usr/local/Ascend/driver/topo/a5/superpod_2d.json"
+	Pod2DTopoPath = "/usr/local/Ascend/driver/topo/950/superpod_2d.json"
 	// Server16PTopoPath 16p server topo path
-	Server16PTopoPath = "/usr/local/Ascend/driver/topo/a5/server_16p.json"
+	Server16PTopoPath = "/usr/local/Ascend/driver/topo/950/server_16p.json"
 	// Server32PTopoPath 32p server topo path
-	Server32PTopoPath = "/usr/local/Ascend/driver/topo/a5/server_32p.json"
+	Server32PTopoPath = "/usr/local/Ascend/driver/topo/950/server_32p.json"
 	// Card1PTopoPath 1p card topo path
-	Card1PTopoPath = "/usr/local/Ascend/driver/topo/a5/card_1p.json"
+	Card1PTopoPath = "/usr/local/Ascend/driver/topo/950/card_1p.json"
 	// Card4PTopoPath 4p card topo path
-	Card4PTopoPath = "/usr/local/Ascend/driver/topo/a5/card_4p_mesh.json"
+	Card4PTopoPath = "/usr/local/Ascend/driver/topo/950/card_4p_mesh.json"
 	// HcclTopoFilePathKey HcclTopoFilePath key
 	HcclTopoFilePathKey = "HCCL_TOPO_FILE_PATH"
 	// PhyLimit phy limit

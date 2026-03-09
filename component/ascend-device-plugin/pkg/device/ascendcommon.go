@@ -981,7 +981,7 @@ func skipGetIPForA5(allDevices []common.NpuDevice) bool {
 }
 
 // AddPodAnnotation check and update pod annotations
-// correct annotation 'AscendReal', 'Ascend910', 'kltDev', 'ascend-910-configuration' per 5s
+// correct annotation 'AscendReal', 'Ascend910', 'kltDev', 'ascend-910-configuration/ascend-npu-configuration' per 5s
 func (tool *AscendTools) AddPodAnnotation(podDev *common.PodDeviceInfo, deviceType, hostIp string,
 	allDevices []common.NpuDevice) error {
 	if !common.ParamOption.PresetVDevice {
@@ -1012,13 +1012,17 @@ func (tool *AscendTools) AddPodAnnotation(podDev *common.PodDeviceInfo, deviceTy
 			}
 		}
 	}
-	if tool.name == api.Ascend910 || common.IsContainAll300IDuo() {
+	if tool.name == api.NPULowerCase || tool.name == api.Ascend910 || common.IsContainAll300IDuo() {
 		config, err := tool.getConfigAnno(podDev, deviceType, hostIp, allDevices)
 		if err == nil {
-			if podDev.Pod.Annotations[api.Pod910DeviceAnno] != config {
-				hwlog.RunLog.Warnf("need correct: annotKey: %s, old value: %s, new value: %s",
-					api.Pod910DeviceAnno, podDev.Pod.Annotations[api.Pod910DeviceAnno], config)
-				annotation[api.Pod910DeviceAnno] = config
+			key := api.Pod910DeviceAnno
+			if tool.name == api.NPULowerCase {
+				key = api.PodNPUDeviceAnno
+			}
+			if podDev.Pod.Annotations[key] != config {
+				hwlog.RunLog.Errorf("need correct: annotKey: %s, old value: %s, new value: %s",
+					key, podDev.Pod.Annotations[key], config)
+				annotation[key] = config
 			}
 		}
 	}
@@ -1157,7 +1161,7 @@ func (tool *AscendTools) isNetworkHealthy(device *common.NpuDevice) string {
 func (tool *AscendTools) npuIsUsedNow(deviceName string) bool {
 	podList := tool.client.GetActivePodListCache()
 	for _, pod := range podList {
-		annotationTag := fmt.Sprintf("%s%s", api.ResourceNamePrefix, api.Ascend910)
+		annotationTag := fmt.Sprintf("%s%s", api.ResourceNamePrefix, getAscend910Name())
 		tmpNpu, ok := pod.Annotations[annotationTag]
 		if !ok || len(tmpNpu) == 0 || len(tmpNpu) > common.PodAnnotationMaxLength {
 			continue

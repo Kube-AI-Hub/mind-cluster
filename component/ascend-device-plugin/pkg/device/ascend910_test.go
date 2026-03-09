@@ -1534,7 +1534,7 @@ func TestUpdateHotResetCache(t *testing.T) {
 		defer patch.Reset()
 		convey.Convey("01-classifyDevs is empty, should return error", func() {
 			err := manager.updateHotResetCache(nil)
-			convey.So(err.Error(), convey.ShouldEqual, "ascend 910 device list not found")
+			convey.So(err.Error(), convey.ShouldEqual, "ascend npu device list not found")
 		})
 		convey.Convey("02-Ascend910 dev is empty, should return error", func() {
 			classifyDevs := map[string][]*common.NpuDevice{api.Ascend910: {}}
@@ -1576,7 +1576,7 @@ func TestUpdateUpgradeErrorInfo(t *testing.T) {
 		patch.ApplyGlobalVar(&isolateDevList, []int32{chipPhyID2, chipPhyID4})
 		convey.Convey("02-classifyDevs is empty, should return error", func() {
 			err := manager.updateUpgradeErrorInfo(map[string][]*common.NpuDevice{})
-			convey.So(err.Error(), convey.ShouldEqual, "no Ascend 910 device found in cache")
+			convey.So(err.Error(), convey.ShouldEqual, "no Ascend npu device found in cache")
 		})
 		convey.Convey("03-update success, should return nil", func() {
 			classifyDevs := map[string][]*common.NpuDevice{
