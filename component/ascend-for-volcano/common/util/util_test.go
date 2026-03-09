@@ -1095,3 +1095,196 @@ func TestSortByNumericValue(t *testing.T) {
 		})
 	}
 }
+
+type getActivePodUsedDevTestCase struct {
+	name    string
+	pod     *v1.Pod
+	devType string
+	want    []string
+}
+
+func TestGetActivePodUsedDev(t *testing.T) {
+	tests := []getActivePodUsedDevTestCase{
+		buildBasicSuccessCase(),
+		buildFallbackSuccessCase(),
+		buildPriorityCase(),
+		buildMissingAnnotationCase(),
+		buildEmptyAscendRealCase(),
+		buildEmptyDevTypeCase(),
+		buildExceedLengthLimitCase(),
+		buildExceedDeviceNumCase(),
+		buildSingleDeviceCase(),
+		buildMultipleDevicesCase(),
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getActivePodUsedDev(tt.pod, tt.devType)
+			sort.Strings(got)
+			sort.Strings(tt.want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getActivePodUsedDev() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func buildBasicSuccessCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "01-getActivePodUsedDev success from AscendNPUPodRealUse annotation",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{AscendNPUPodRealUse: strings.Join([]string{devName0, devName1}, ",")},
+			},
+		},
+		devType: Ascend910,
+		want:    []string{devName0, devName1},
+	}
+}
+
+func buildFallbackSuccessCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "02-getActivePodUsedDev success from HwPreName+devType annotation",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{HwPreName + Ascend910: strings.Join([]string{devName2}, ",")},
+			},
+		},
+		devType: Ascend910,
+		want:    []string{devName2},
+	}
+}
+
+func buildPriorityCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "03-getActivePodUsedDev prefer AscendNPUPodRealUse over HwPreName+devType",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName1,
+				Namespace: defaultNS,
+				Annotations: map[string]string{
+					AscendNPUPodRealUse:   strings.Join([]string{devName0}, ","),
+					HwPreName + Ascend910: strings.Join([]string{devName2}, ","),
+				},
+			},
+		},
+		devType: Ascend910,
+		want:    []string{devName0},
+	}
+}
+
+func buildMissingAnnotationCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "04-getActivePodUsedDev return nil when annotations does not exist",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{},
+			},
+		},
+		devType: Ascend910,
+		want:    nil,
+	}
+}
+
+func buildEmptyAscendRealCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "05-getActivePodUsedDev return nil when AscendNPUPodRealUse is empty",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{AscendNPUPodRealUse: ""},
+			},
+		},
+		devType: Ascend910,
+		want:    nil,
+	}
+}
+
+func buildEmptyDevTypeCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "06-getActivePodUsedDev return nil when HwPreName+devType is empty",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{HwPreName + Ascend910: ""},
+			},
+		},
+		devType: Ascend910,
+		want:    nil,
+	}
+}
+
+func buildExceedLengthLimitCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "07-getActivePodUsedDev return nil when annotation length exceeds limit",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{AscendNPUPodRealUse: strings.Repeat("a", PodAnnotationMaxLength+1)},
+			},
+		},
+		devType: Ascend910,
+		want:    nil,
+	}
+}
+
+func buildExceedDeviceNumCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "08-getActivePodUsedDev return nil when device list length exceeds MaxDevicesNum",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{HwPreName + Ascend910: generateDeviceList(MaxDevicesNum + 1)},
+			},
+		},
+		devType: Ascend910,
+		want:    nil,
+	}
+}
+
+func buildSingleDeviceCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "09-getActivePodUsedDev success with single device",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{HwPreName + Ascend910: devName0},
+			},
+		},
+		devType: Ascend910,
+		want:    []string{devName0},
+	}
+}
+
+func buildMultipleDevicesCase() getActivePodUsedDevTestCase {
+	return getActivePodUsedDevTestCase{
+		name: "10-getActivePodUsedDev success with multiple devices",
+		pod: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        podName1,
+				Namespace:   defaultNS,
+				Annotations: map[string]string{HwPreName + Ascend910: strings.Join([]string{devName0, devName1, devName2, devName3}, ",")},
+			},
+		},
+		devType: Ascend910,
+		want:    []string{devName0, devName1, devName2, devName3},
+	}
+}
+
+func generateDeviceList(count int) string {
+	devices := make([]string, count)
+	for i := 0; i < count; i++ {
+		devices[i] = fmt.Sprintf("Ascend910-%d", i)
+	}
+	return strings.Join(devices, ",")
+}
