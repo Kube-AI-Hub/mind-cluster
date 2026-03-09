@@ -342,19 +342,27 @@ func GetActivePodUsedDevFromNode(nodeInfo *api.NodeInfo, devType string) []strin
 			klog.V(LogErrorLev).Infof("pod namespace is illegal, error: %v", err)
 			continue
 		}
-		tmpDev, ok := pod.Annotations[fmt.Sprintf("%s%s", HwPreName, devType)]
-		if !ok || len(tmpDev) == 0 || len(tmpDev) > PodAnnotationMaxLength {
-			continue
-		}
-		tmpDevList := strings.Split(tmpDev, ",")
-		if len(tmpDevList) == 0 || len(tmpDevList) > MaxDevicesNum {
-			klog.V(LogErrorLev).Info("invalid device list length from annotation")
-			continue
-		}
-		usedDev = append(usedDev, tmpDevList...)
+		usedDev = append(usedDev, getActivePodUsedDev(pod, devType)...)
 	}
 	klog.V(LogDebugLev).Infof("nodeName: %s, usedDev: %v", nodeInfo.Name, usedDev)
 	return usedDev
+}
+
+func getActivePodUsedDev(pod *v1.Pod, devType string) []string {
+	usedDev, ok := pod.Annotations[AscendNPUPodRealUse]
+	if !ok || len(usedDev) == 0 || len(usedDev) > PodAnnotationMaxLength {
+		usedDev, ok = pod.Annotations[fmt.Sprintf("%s%s", HwPreName, devType)]
+		if !ok || len(usedDev) == 0 || len(usedDev) > PodAnnotationMaxLength {
+			return nil
+		}
+	}
+
+	tmpDevList := strings.Split(usedDev, ",")
+	if len(tmpDevList) == 0 || len(tmpDevList) > MaxDevicesNum {
+		klog.V(LogErrorLev).Info("invalid device list length from annotation")
+		return nil
+	}
+	return tmpDevList
 }
 
 // GetAvailableDevInfo get available device info from device list

@@ -996,7 +996,6 @@ func (tool *AscendTools) AddPodAnnotation(podDev *common.PodDeviceInfo, deviceTy
 	}{
 		{annoKey: api.ResourceNamePrefix + common.Pod2kl, annoValue: strings.Join(podDev.KltDevice, common.CommaSepDev)},
 		{annoKey: api.PodAnnotationAscendReal, annoValue: allUsedDev},
-		{annoKey: fmt.Sprintf("%s%s", api.ResourceNamePrefix, deviceType), annoValue: allUsedDev},
 	}
 	annotation := make(map[string]string)
 	if !common.IsVirtualDev(deviceType) {
