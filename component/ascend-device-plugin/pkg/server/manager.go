@@ -1303,18 +1303,18 @@ func (hdm *HwDevManager) calculateCardUsedResourceQuota(
 		aicoreQuota, err := hdm.parseAnnotationIntValue(
 			deviceInfo.Pod, api.SchedulerSoftShareDevAicoreQuotaKey, "AI Core quota")
 		if err != nil {
-			hwlog.RunLog.Warnf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
+			hwlog.RunLog.Debugf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
 			continue
 		}
 		hbmQuota, err := hdm.parseAnnotationIntValue(
 			deviceInfo.Pod, api.SchedulerSoftShareDevHbmQuotaKey, "HBM quota")
 		if err != nil {
-			hwlog.RunLog.Warnf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
+			hwlog.RunLog.Debugf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
 			continue
 		}
 		policy, err := hdm.parseAnnotationIntValue(deviceInfo.Pod, api.SchedulerSoftShareDevPolicyKey, "policy")
 		if err != nil {
-			hwlog.RunLog.Warnf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
+			hwlog.RunLog.Debugf("pod %s/%s: %v", deviceInfo.Pod.Namespace, deviceInfo.Pod.Name, err)
 			continue
 		}
 		existingQuota := cardUsedResourceQuotaMap[ascendReal]
