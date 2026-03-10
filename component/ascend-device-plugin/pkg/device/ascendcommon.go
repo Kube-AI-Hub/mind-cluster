@@ -1590,7 +1590,7 @@ func (tool *AscendTools) WriteUpgradeReasonRemoveEvent(reasonCache common.Upgrad
 // doWriteFaultToEvent writing fault event to cache
 func (tool *AscendTools) doWriteFaultToEvent(faultInfo npuCommon.DevFaultInfo) error {
 	cardID, deviceID, err := tool.dmgr.GetCardIDDeviceID(faultInfo.LogicID)
-	if err != nil {
+	if err != nil && tool.dmgr.GetDevType() != api.Ascend910A5 {
 		return fmt.Errorf("failed to get cardID and deviceID, %w", err)
 	}
 	nodeName, err := kubeclient.GetNodeNameFromEnv()
@@ -1612,13 +1612,22 @@ func (tool *AscendTools) doWriteFaultToEvent(faultInfo npuCommon.DevFaultInfo) e
 		faultLevelName = common.GetNetworkFaultTypeByCode([]int64{faultInfo.EventID})
 	}
 	faultInfo.AlarmRaisedTime = time.Now().UnixMilli()
+
+	// Decide whether to report cardID/deviceID or logicID based on device type
+	var devInfo string
+	if tool.dmgr.GetDevType() != api.Ascend910A5 {
+		devInfo = fmt.Sprintf("cardID:%d, deviceID:%d", cardID, deviceID)
+	} else {
+		devInfo = fmt.Sprintf("logicID:%d", faultInfo.LogicID)
+	}
+
 	event := &v1.Event{
 		ObjectMeta: metav1.ObjectMeta{Namespace: api.KubeNS,
 			Name: fmt.Sprintf("%s.%d%d", podName, faultInfo.AlarmRaisedTime, faultInfo.LogicID),
 		},
 		Type: v1.EventTypeWarning,
-		Message: fmt.Sprintf("device fault, nodeName:%s, assertion:%s, cardID:%d, deviceID:%d, "+
-			"faultCodes:%s, faultLevelName:%s, alarmRaisedTime:%s", nodeName, assertionName, cardID, deviceID,
+		Message: fmt.Sprintf("device fault, nodeName:%s, assertion:%s, %s, "+
+			"faultCodes:%s, faultLevelName:%s, alarmRaisedTime:%s", nodeName, assertionName, devInfo,
 			strings.ToUpper(strconv.FormatInt(faultInfo.EventID, common.Hex)), faultLevelName,
 			time.UnixMilli(faultInfo.AlarmRaisedTime).Format(common.TimeFormat)),
 		EventTime: metav1.MicroTime{Time: time.UnixMilli(faultInfo.AlarmRaisedTime)},
