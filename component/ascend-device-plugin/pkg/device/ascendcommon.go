@@ -801,19 +801,17 @@ func (tool *AscendTools) getDeviceFaults(device *common.NpuDevice) []common.Devi
 
 func (tool *AscendTools) getDeviceFaultsWithMode(device *common.NpuDevice, faultCodes []int64,
 	deviceFaults []common.DeviceFault, mode string, unhealthyType string) []common.DeviceFault {
-	timeoutFaultLevelAndTime := common.GetTimeoutFaultLevelAndCodes(mode, device.LogicID)
-	frequencyFaultLevelAndTime := common.GetFrequencyFaultLevelAndCodes(mode, device.LogicID)
-	allFaultLevelAndTime := tool.combineFaultTimeMaps(timeoutFaultLevelAndTime, frequencyFaultLevelAndTime)
-	allFaultCodes := append(faultCodes, common.Keys(allFaultLevelAndTime)...)
+	upgradeFaultLevelAndTime := common.GetUpgradeFaultLevelAndTime(device.LogicID)
+	allFaultCodes := append(faultCodes, common.Keys(upgradeFaultLevelAndTime)...)
 	newCode := tool.removeDuplicateErr(allFaultCodes)
 	var faultType = ""
 	var isNetworkFault bool
 	if mode == common.NetworkFaultMode {
-		faultType = common.GetNetworkFaultType(faultCodes, device.LogicID)
+		faultType = common.GetNetworkFaultType(newCode, device.LogicID)
 		isNetworkFault = true
 	}
 	if mode == common.ChipFaultMode {
-		faultType = common.GetFaultType(faultCodes, device.LogicID)
+		faultType = common.GetFaultType(newCode, device.LogicID)
 		isNetworkFault = false
 	}
 	deviceFaults = append(deviceFaults, common.DeviceFault{
@@ -823,7 +821,7 @@ func (tool *AscendTools) getDeviceFaultsWithMode(device *common.NpuDevice, fault
 		FaultLevel:           faultType,
 		FaultHandling:        faultType,
 		FaultCode:            strings.ToUpper(common.Int64Tool.ToHexString(newCode)),
-		FaultTimeAndLevelMap: tool.getFaultTimeAndLevelMap(device, allFaultLevelAndTime, isNetworkFault),
+		FaultTimeAndLevelMap: tool.getFaultTimeAndLevelMap(device, upgradeFaultLevelAndTime, isNetworkFault),
 	})
 	return deviceFaults
 }

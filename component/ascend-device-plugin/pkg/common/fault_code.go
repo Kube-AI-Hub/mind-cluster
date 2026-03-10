@@ -875,8 +875,9 @@ func GetFaultType(faultCodes []int64, logicId int32) string {
 	faultTypes = append(faultTypes, GetFaultTypeByCode(newFaultCodes))
 	faultTypes = append(faultTypes, GetFaultTypeFromFaultFrequency(logicId, ChipFaultMode))
 	faultTypes = append(faultTypes, GetFaultTypeFromFaultDuration(logicId, ChipFaultMode))
-	if QueryManuallyFaultInfoByLogicID(logicId) {
-		faultTypes = append(faultTypes, ManuallySeparateNPU)
+	faultLevelAndTime := GetUpgradeFaultLevelAndTime(logicId)
+	for _, levelAndTime := range faultLevelAndTime {
+		faultTypes = append(faultTypes, levelAndTime.FaultLevel)
 	}
 	return getMostSeriousFaultType(faultTypes)
 }
@@ -1845,6 +1846,23 @@ func GetFrequencyFaultLevelAndCodes(mode string, logicId int32) map[int64]FaultT
 				FaultTime:  faultFrequencyCache.Frequency[logicId][faultOccurLen-1],
 				FaultLevel: faultFrequencyCache.FaultHandling,
 			}
+		}
+	}
+	return result
+}
+
+func GetUpgradeFaultLevelAndTime(logicId int32) map[int64]FaultTimeAndLevel {
+	upgradeReasonSet := copyUpgradeFaultCacheFromLogic(LogicId(logicId))
+	result := make(map[int64]FaultTimeAndLevel)
+	for _, value := range upgradeReasonSet {
+		num, err := strconv.ParseInt(value.FaultCode, Hex, 0)
+		if err != nil {
+			hwlog.RunLog.Errorf(parseHexFailedMsg, value.FaultCode)
+			continue
+		}
+		result[num] = FaultTimeAndLevel{
+			FaultTime:  value.UpgradeTime,
+			FaultLevel: value.FaultLevel,
 		}
 	}
 	return result

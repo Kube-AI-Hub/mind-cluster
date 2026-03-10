@@ -1564,6 +1564,22 @@ func TestGetFaultType(t *testing.T) {
 	})
 }
 
+// TestGetFaultTypeFromUpgradeFault for test GetFaultType
+func TestGetFaultTypeFromUpgradeFault(t *testing.T) {
+	convey.Convey("test TestGetFaultTypeFromUpgradeFault success", t, func() {
+		patches := gomonkey.NewPatches()
+		defer patches.Reset()
+		patches.ApplyFunc(GetUpgradeFaultLevelAndTime, func(logicId int32) map[int64]FaultTimeAndLevel {
+			res := make(map[int64]FaultTimeAndLevel)
+			res[AivBusFaultCode] = FaultTimeAndLevel{FaultLevel: PreSeparateNPU}
+			res[AicBusFaultCode] = FaultTimeAndLevel{FaultLevel: ManuallySeparateNPU}
+			return res
+		})
+		faultType := GetFaultType([]int64{}, 0)
+		convey.So(ManuallySeparateNPU, convey.ShouldEqual, faultType)
+	})
+}
+
 // TestGetNetworkFaultType for test GetNetworkFaultType
 func TestGetNetworkFaultType(t *testing.T) {
 	convey.Convey("test GetNetworkFaultType success", t, func() {
@@ -2020,5 +2036,17 @@ func TestIsValidSwitchFaultCode(t *testing.T) {
 	convey.Convey("test isValidSwitchFaultCode don't match format", t, func() {
 		ret := isValidSwitchFaultCode("aaaa")
 		convey.So(ret, convey.ShouldEqual, false)
+	})
+}
+
+// TestGetUpgradeFaultLevelAndTime for test GetUpgradeFaultLevelAndTime
+func TestGetUpgradeFaultLevelAndTime(t *testing.T) {
+	convey.Convey("test TestGetUpgradeFaultLevelAndTime should succeed", t, func() {
+		InsertUpgradeFaultCache(LogicId(0), time.Now().UnixMilli(), HbmDoubleBitFaultCodeStr,
+			ManuallySeparateNPU, FrequencyUpgradeType)
+		faultLevelAndTime := GetUpgradeFaultLevelAndTime(0)
+		num, err := strconv.ParseInt(HbmDoubleBitFaultCodeStr, Hex, 0)
+		convey.So(err, convey.ShouldEqual, err)
+		convey.So(faultLevelAndTime[num].FaultLevel, convey.ShouldEqual, ManuallySeparateNPU)
 	})
 }
