@@ -119,6 +119,12 @@ func CopyUpgradeFaultCache() UpgradeFaultReasonMap[LogicId] {
 	return upgradeFaultCacheMgr.cache.copy()
 }
 
+func copyUpgradeFaultCacheFromLogic(id LogicId) UpgradeFaultReasonSet {
+	upgradeFaultCacheMgr.cacheLock.Lock()
+	defer upgradeFaultCacheMgr.cacheLock.Unlock()
+	return upgradeFaultCacheMgr.cache[id].copy()
+}
+
 type UpgradeTypeEnum string
 
 const (

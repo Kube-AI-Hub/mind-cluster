@@ -36,6 +36,7 @@ import (
 	"Ascend-device-plugin/pkg/common"
 	"Ascend-device-plugin/pkg/kubeclient"
 	"ascend-common/api"
+	"ascend-common/common-utils/hwlog"
 	"ascend-common/devmanager"
 	devcommon "ascend-common/devmanager/common"
 )
@@ -76,6 +77,13 @@ func createFakeDeviceInfo() *common.NodeDeviceInfoCache {
 		},
 		CheckCode: "",
 	}
+}
+
+func init() {
+	hwLogConfig := hwlog.LogConfig{
+		OnlyToStdout: true,
+	}
+	hwlog.InitRunLogger(&hwLogConfig, context.Background())
 }
 
 func TestHwAscend910ManagerGetNPUs(t *testing.T) {
