@@ -11,7 +11,7 @@ NPU Exporter的基本信息页面。
 GET http://ip:port/
 
 >[!NOTE] 说明 
->-   IP：在容器化部署场景中，使用容器IP；在二进制部署场景中，使用启动NPU Exporter的IP入参。
+>-   IP：在容器化部署场景中，使用容器IP；在二进制部署场景中，使用启动NPU Exporter的IP入参。如果IP为ipv6格式，访问格式调整为：http://[IP]:port/。
 >-   port：默认为8082，部署时如有修改，使用实际部署时使用的port入参。
 
 **请求参数<a name="zh-cn_topic_0000001497524785_section162719122175"></a>**

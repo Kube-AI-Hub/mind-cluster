@@ -961,7 +961,7 @@ MindCluster集群调度组件通过K8s将设备和训练任务状态等信息写
 </tr>
 <tr id="row1194165581219"><td class="cellrowborder" valign="top" width="25%" headers="mcps1.2.5.1.1 "><p id="p1095195511125"><a name="p1095195511125"></a><a name="p1095195511125"></a>- tor_ip</p>
 </td>
-<td class="cellrowborder" valign="top" width="26.75%" headers="mcps1.2.5.1.2 "><p id="p19953555121"><a name="p19953555121"></a><a name="p19953555121"></a>交换机的IP地址</p>
+<td class="cellrowborder" valign="top" width="26.75%" headers="mcps1.2.5.1.2 "><p id="p19953555121"><a name="p19953555121"></a><a name="p19953555121"></a>交换机的IP地址，要求为常规IPv4或IPv6格式</p>
 </td>
 <td class="cellrowborder" valign="top" width="23.25%" headers="mcps1.2.5.1.3 "><p id="p99515520126"><a name="p99515520126"></a><a name="p99515520126"></a>字符串</p>
 </td>
@@ -979,7 +979,7 @@ MindCluster集群调度组件通过K8s将设备和训练任务状态等信息写
 </tr>
 <tr id="row199718557121"><td class="cellrowborder" valign="top" width="25%" headers="mcps1.2.5.1.1 "><p id="p1697555161219"><a name="p1697555161219"></a><a name="p1697555161219"></a>- server_ip</p>
 </td>
-<td class="cellrowborder" valign="top" width="26.75%" headers="mcps1.2.5.1.2 "><p id="p0986557122"><a name="p0986557122"></a><a name="p0986557122"></a>节点的IP地址</p>
+<td class="cellrowborder" valign="top" width="26.75%" headers="mcps1.2.5.1.2 "><p id="p0986557122"><a name="p0986557122"></a><a name="p0986557122"></a>节点的IP地址，要求为常规IPv4或IPv6格式</p>
 </td>
 <td class="cellrowborder" valign="top" width="23.25%" headers="mcps1.2.5.1.3 "><p id="p16983555129"><a name="p16983555129"></a><a name="p16983555129"></a>字符串</p>
 </td>
