@@ -872,7 +872,7 @@ func (tool *AscendTools) getVirtualDevice(logicID int32) (npuCommon.VirtualDevIn
 // GetDeviceIP get device ip
 func (tool *AscendTools) GetDeviceIP(deviceType string, phyID int) (string, error) {
 	if common.IsVirtualDev(deviceType) {
-		return common.DefaultDeviceIP, nil
+		return api.DeviceIPDefaultCodeStr, nil
 	}
 	logicID, err := tool.dmgr.GetLogicIDFromPhysicID(int32(phyID))
 	if err != nil {
@@ -883,7 +883,7 @@ func (tool *AscendTools) GetDeviceIP(deviceType string, phyID int) (string, erro
 		return "", fmt.Errorf("get logicID %d chip info failed, err: %v", logicID, err)
 	}
 	if strings.Contains(chip.Name, common.VirMark) {
-		return common.DefaultDeviceIP, nil
+		return api.DeviceIPDefaultCodeStr, nil
 	}
 	return tool.getDcmiDeviceIP(logicID)
 }
@@ -926,13 +926,15 @@ func (tool *AscendTools) getDeviceListIP(devices []string, deviceType string) (m
 	devicesWithIP := make(map[int]string, len(devices))
 	for _, id := range ascendDevices {
 		if tool.deviceUsage == common.Infer {
-			devicesWithIP[id] = ""
+			devicesWithIP[id] = api.DeviceIPEmptyCodeStr
 			continue
 		}
 		deviceIP, err := tool.GetDeviceIP(deviceType, id)
 		if err != nil {
-			hwlog.RunLog.Errorf("get device %d ip err: %v", id, err)
-			return nil, err
+			devicesWithIP[id] = api.DeviceIPErrorCodeStr // set error ip if get ip failed, it will due to ranktable generator in some scenario
+			hwlog.RunLog.Warnf("get device %d ip err: %v, set error ip %s",
+				id, err, api.DeviceIPErrorCodeStr)
+			continue
 		}
 		devicesWithIP[id] = deviceIP
 	}
@@ -951,7 +953,7 @@ func (tool *AscendTools) getConfigAnno(podDev *common.PodDeviceInfo, deviceType,
 		return "", errors.New("get device list id failed")
 	}
 	ascendVisibleDevices, err := tool.getDeviceListIP(podDev.RealDevice, deviceType)
-	if !skipGetIPForA5(allDevices) && err != nil { // a5 machine get ip through dcmi return error, need skip
+	if err != nil {
 		hwlog.RunLog.Errorf("get device list ip failed, error: %v", err)
 		return "", errors.New("get device list ip failed")
 	}
@@ -967,15 +969,6 @@ func (tool *AscendTools) getConfigAnno(podDev *common.PodDeviceInfo, deviceType,
 	configuration := common.GetPodConfiguration(phyDevMapVirtualDev, ascendVisibleDevices,
 		podDev.Pod.Name, info, allDevices)
 	return configuration, nil
-}
-
-func skipGetIPForA5(allDevices []common.NpuDevice) bool {
-	for _, device := range allDevices {
-		if len(device.LevelList) > 0 {
-			return true
-		}
-	}
-	return false
 }
 
 // AddPodAnnotation check and update pod annotations

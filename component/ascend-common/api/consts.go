@@ -294,3 +294,12 @@ const (
 	// SoftShareDeviceSchedulingPolicyBestEffortInt scheduling policy for best effort
 	SoftShareDeviceSchedulingPolicyBestEffortInt = "3"
 )
+
+const (
+	// DeviceIPErrorCodeStr is the error device IP, it will due to ranktable generator error in version 1.0 and 1.2
+	DeviceIPErrorCodeStr = "-1"
+	// DeviceIPEmptyCodeStr is the empty device IP, this does not affect ranktable generation
+	DeviceIPEmptyCodeStr = ""
+	// DeviceIPDefaultCodeStr is the default device IP, this does not affect ranktable generation
+	DeviceIPDefaultCodeStr = "127.0.0.1"
+)

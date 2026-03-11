@@ -56,6 +56,7 @@ type BaseGenerator struct {
 	rankTabler     generator.RankTableGenerator
 	IsMindIEEPJob  bool `json:"-"`
 	isSoftStrategy bool
+	spBlockNum     int
 	// needGenerate for A5
 	needGenerate bool
 	Status       utils.RankTableStatus `json:"status"`
@@ -146,6 +147,16 @@ func (r *BaseGenerator) GetConfigmapStatus() utils.RankTableStatus {
 // GetIsSoftStrategy get is soft strategy
 func (r *BaseGenerator) GetIsSoftStrategy() bool {
 	return r.isSoftStrategy
+}
+
+// GetSpBlockNum get sp block num
+func (r *BaseGenerator) GetSpBlockNum() int {
+	return r.spBlockNum
+}
+
+// SetSpBlockNum set sp block num
+func (r *BaseGenerator) SetSpBlockNum(spBlockNum int) {
+	r.spBlockNum = spBlockNum
 }
 
 // WriteToFile is used to write ranktable to file.
@@ -243,12 +254,49 @@ func (r *BaseGenerator) AddPod(pod *corev1.Pod) error {
 		return nil
 	}
 
+	// validate device IP for v1.0 and v1.2 scenarios
+	if err := r.validateDeviceIP(instance); err != nil {
+		return err
+	}
+
 	server, err := r.buildServerInfo(pod, instance)
 	if err != nil {
 		return err
 	}
 
 	r.servers.Store(pod.UID, server)
+	return nil
+}
+
+// validateDeviceIP validates device IP based on ranktable version and sp-block num
+// v1.0: must have valid IP
+// v1.2: only need valid IP when sp-block num > 1 (cross logical super pod)
+// v2.0: no IP validation needed
+func (r *BaseGenerator) validateDeviceIP(instance *Instance) error {
+	// check if IP validation is required
+	needValidateIP := false
+	if r.Version == Version1 {
+		// v1.0 must have valid IP
+		needValidateIP = true
+	} else if r.Version == Version1Dot2 && r.GetSpBlockNum() > 1 {
+		// v1.2 only need IP when sp-block num > 1 (cross logical super pod)
+		needValidateIP = true
+	}
+
+	if !needValidateIP {
+		return nil
+	}
+
+	// validate device IPs
+	for _, device := range instance.Devices {
+		if device.DeviceIP == api.DeviceIPErrorCodeStr {
+			hwlog.RunLog.Errorf("device(%s) has invalid IP(%s) in version %s scenario",
+				device.DeviceID, device.DeviceIP, r.Version)
+			return fmt.Errorf("device(%s) has invalid IP(%s), cannot generate ranktable",
+				device.DeviceID, device.DeviceIP)
+		}
+	}
+
 	return nil
 }
 
