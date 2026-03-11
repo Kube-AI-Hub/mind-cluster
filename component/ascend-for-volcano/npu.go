@@ -282,15 +282,7 @@ func getNpuNum(ssn *framework.Session, tp *huaweiNPUPlugin, npuName string) int 
 		deviceList := strings.Split(deviceInfo, ",")
 		klog.V(util.LogDebugLev).Infof("Add enqueue node %s deviceList is: %#v", vcNode.Name, deviceList)
 		npuNum, ok := vcNode.Idle[v1.ResourceName(npuName)]
-		shareDevCount := 1
-		softShareDevEnableExist := false
-		if node.Node != nil {
-			softShareDevEnable, softShareDevEnableExist := node.Node.Labels[util.SchedulerSoftShareDevEnableNodeLabel]
-			if softShareDevEnableExist && softShareDevEnable == "true" {
-				shareDevCount = util.SoftShareDevCount
-			}
-		}
-		if !softShareDevEnableExist && (!ok || len(deviceList) > int(npuNum/util.NPUHexKilo)) {
+		if !ok || len(deviceList) > int(npuNum/util.NPUHexKilo) {
 			klog.V(util.LogDebugLev).Infof("Add enqueue node %s device info is %v and k8s is %v", vcNode.Name,
 				len(deviceList), int(npuNum/util.NPUHexKilo))
 			errs.Add(node.Name, fmt.Errorf("node resource is not stable, device info is %v and k8s is %v",
@@ -303,6 +295,13 @@ func getNpuNum(ssn *framework.Session, tp *huaweiNPUPlugin, npuName string) int 
 			errs.Add(node.Name, fmt.Errorf("node resource is not init, cap<%v> is less than idle<%v>",
 				int(capVal/util.NPUHexKilo), int(npuNum/util.NPUHexKilo)))
 			continue
+		}
+		shareDevCount := 1
+		if node.Node != nil {
+			softShareDevEnable, softShareDevEnableExist := node.Node.Labels[util.SchedulerSoftShareDevEnableNodeLabel]
+			if softShareDevEnableExist && softShareDevEnable == "true" {
+				shareDevCount = util.SoftShareDevCount
+			}
 		}
 		tNpuNum += len(deviceList) * shareDevCount
 	}
