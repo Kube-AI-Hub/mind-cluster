@@ -97,7 +97,7 @@ if [[ ! -d ${PROJ_DIR}/3rdparty/ubs-comm/ubs-comm ]]; then
     cd ${PROJ_DIR}/3rdparty/ubs-comm
     git clone https://atomgit.com/openeuler/ubs-comm.git
     cd ${PROJ_DIR}/3rdparty/ubs-comm/ubs-comm
-    git checkout master && git submodule update --init
+    git checkout v1.0.0 && git submodule update --init
 fi
 
 if [[ ! -d ${PROJ_DIR}/3rdparty/libboundscheck/libboundscheck ]]; then
