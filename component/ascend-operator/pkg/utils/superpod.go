@@ -8,6 +8,7 @@ package utils
 import (
 	"strconv"
 
+	"ascend-common/api"
 	"ascend-operator/pkg/api/v1"
 )
 
@@ -61,4 +62,44 @@ func GetSpBlock(job *v1.AscendJob) int {
 		spBlock = 0
 	}
 	return spBlock
+}
+
+func getAllDevicesForJob(job *v1.AscendJob) int {
+	if job == nil || job.Spec.ReplicaSpecs == nil {
+		return 0
+	}
+
+	totalDevices := 0
+	for _, spec := range job.Spec.ReplicaSpecs {
+		if spec == nil || spec.Replicas == nil {
+			continue
+		}
+		replicas := int(*spec.Replicas)
+
+		devicesPerPod := 0
+		for _, container := range spec.Template.Spec.Containers {
+			if quantity, ok := container.Resources.Requests[api.HuaweiAscend910]; ok {
+				devices, _ := quantity.AsInt64()
+				devicesPerPod = int(devices)
+				break
+			}
+		}
+
+		totalDevices += replicas * devicesPerPod
+	}
+	return totalDevices
+}
+
+// GetSpBlockNum get spblock num for job
+func GetSpBlockNum(job *v1.AscendJob) int {
+	if job == nil || job.Annotations == nil {
+		return 0
+	}
+
+	allDevices := getAllDevicesForJob(job)
+	spBlock := GetSpBlock(job)
+	if spBlock == 0 {
+		return 0
+	}
+	return allDevices / spBlock
 }

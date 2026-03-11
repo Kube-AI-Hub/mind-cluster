@@ -197,9 +197,15 @@ func (r *ASJobReconciler) genRankTable(ji *jobInfo) {
 	if int(ji.totalReplicas) == 0 || len(allocatedPods) != int(ji.totalReplicas) {
 		return
 	}
-
+	
 	r.updateRandIndex(allocatedPods)
 	r.setOnePodOneNode(allocatedPods)
+	if acjob, ok := ji.job.(*mindxdlv1.AscendJob); ok {
+		rtg.SetSpBlockNum(mindxdlutils.GetSpBlockNum(acjob))
+	} else {
+		hwlog.RunLog.Debugf("job %s is not AscendJob, skip set sp block num", ji.name)
+	}
+	
 	if err := r.cachePods(rtg, allocatedPods); err != nil {
 		hwlog.RunLog.Errorf("%v", err)
 		return

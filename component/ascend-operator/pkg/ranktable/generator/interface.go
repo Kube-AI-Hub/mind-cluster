@@ -39,4 +39,6 @@ type RankTableGenerator interface {
 	SetFileStatus(utils.RankTableStatus)
 	Lock()
 	Unlock()
+	GetSpBlockNum() int
+	SetSpBlockNum(int)
 }

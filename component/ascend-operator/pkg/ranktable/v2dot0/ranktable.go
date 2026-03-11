@@ -183,12 +183,6 @@ func (r *RankTable) AddPod(pod *corev1.Pod) error {
 		return fmt.Errorf("pod(%s/%s) ip is empty", pod.Namespace, pod.Name)
 	}
 	// a5 standard card no mesh scene, there is no urma device and eid info, should generate rank table level_list
-	// Save the server_list value to baseGenerator
-	if err := r.BaseGenerator.AddPod(pod); err != nil {
-		hwlog.RunLog.Errorf("pod(%s/%s) add failed.Error: %s", pod.Namespace, pod.Name, err)
-		return fmt.Errorf("pod(%s/%s) add failed.Error: %s", pod.Namespace, pod.Name, err)
-	}
-
 	return addPodInSuperPodScene(pod, r, instance)
 }
 
