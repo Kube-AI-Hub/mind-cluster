@@ -47,6 +47,9 @@ func (tp *chip1softsharedev) getUsedResourceMapFromNodeTasks(
 	usedMap := make(map[int]softShareDevResource)
 	for _, taskInfo := range tasks {
 		ascendReal, existAscend := taskInfo.Pod.Annotations[util.AscendNPUPodRealUse]
+		if !existAscend {
+			ascendReal, existAscend = taskInfo.Pod.Annotations[tp.GetAnnoName(tp.ReqNPUName)]
+		}
 		aicoreAnno, existAicore := taskInfo.Pod.Annotations[util.SchedulerSoftShareDevAicoreQuotaKey]
 		hbmAnno, existHbm := taskInfo.Pod.Annotations[util.SchedulerSoftShareDevHbmQuotaKey]
 		policyAnno, existPolicy := taskInfo.Pod.Annotations[util.SchedulerSoftShareDevPolicyKey]

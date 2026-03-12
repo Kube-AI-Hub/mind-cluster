@@ -43,7 +43,9 @@ import (
 )
 
 type softShareDevAnnotations struct {
+	physicalId       string
 	vNPUId           string
+	dieId            string
 	aicoreQuota      string
 	hbmQuota         string
 	schedulingPolicy string
@@ -895,7 +897,6 @@ func (ps *PluginServer) extractPodAnnotations(pod *v1.Pod) (softShareDevAnnotati
 		key          string
 		valuePointer *string
 	}{
-		{api.SchedulerSoftShareDevVNPUIdKey, &annotations.vNPUId},
 		{api.SchedulerSoftShareDevAicoreQuotaKey, &annotations.aicoreQuota},
 		{api.SchedulerSoftShareDevHbmQuotaKey, &annotations.hbmQuota},
 		{api.SchedulerSoftShareDevPolicyKey, &annotations.schedulingPolicy},
@@ -934,17 +935,16 @@ func (ps *PluginServer) buildConfigDirPath(pod *v1.Pod, jobName string, logicID 
 	)
 }
 
-func (ps *PluginServer) writeNPUConfigFile(configDir string, physicalID int, dieId string,
-	annotations softShareDevAnnotations) error {
+func (ps *PluginServer) writeNPUConfigFile(configDir string, annotations softShareDevAnnotations) error {
 	configItems := []struct {
 		configKey string
 		value     string
 	}{
-		{api.SoftShareDeviceConfigPhysicalNPUId, fmt.Sprintf("%d", physicalID)},
+		{api.SoftShareDeviceConfigPhysicalNPUId, annotations.physicalId},
 		{api.SoftShareDeviceConfigVirtualNPUId, annotations.vNPUId},
 		{api.SoftShareDeviceConfigAICoreQuota, annotations.aicoreQuota},
 		{api.SoftShareDeviceConfigHbmQuota, annotations.hbmQuota},
-		{api.SoftShareDeviceConfigShmId, dieId},
+		{api.SoftShareDeviceConfigShmId, annotations.dieId},
 		{api.SoftShareDeviceConfigSchedulingPolicy, annotations.schedulingPolicy},
 	}
 
@@ -991,6 +991,17 @@ func (ps *PluginServer) getNPUInfoConfigDirFromPod(pod *v1.Pod, devices []string
 		hwlog.RunLog.Errorf("get valid logic device ID failed: %v", err)
 		return ""
 	}
+	annotations.physicalId = strconv.Itoa(physicalID)
+	maxVirtualID, err := common.GetMaxVirtualIDByPhysicalID(physicalID)
+	if err != nil {
+		hwlog.RunLog.Errorf("get max virtual id by physical id %d failed: %v", physicalID, err)
+		return ""
+	}
+	if maxVirtualID >= math.MaxInt {
+		hwlog.RunLog.Errorf("maxVirtualID reaches int type upper limit %v, cannot increment", math.MaxInt)
+		return ""
+	}
+	annotations.vNPUId = strconv.Itoa(maxVirtualID + 1)
 	jobName := common.GetJobNameOfPod(pod)
 	npuInfoConfigDir := ps.buildConfigDirPath(pod, jobName, physicalID, annotations.vNPUId)
 	if npuInfoConfigDir == "" {
@@ -1006,7 +1017,8 @@ func (ps *PluginServer) getNPUInfoConfigDirFromPod(pod *v1.Pod, devices []string
 		hwlog.RunLog.Errorf("get die id failed, logic id: %d err: %v", logicID, err)
 		return ""
 	}
-	if err := ps.writeNPUConfigFile(npuInfoConfigDir, physicalID, dieId, annotations); err != nil {
+	annotations.dieId = dieId
+	if err := ps.writeNPUConfigFile(npuInfoConfigDir, annotations); err != nil {
 		hwlog.RunLog.Errorf("write NPU config file failed: %v", err)
 		return ""
 	}

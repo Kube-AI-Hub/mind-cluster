@@ -38,6 +38,7 @@ import (
 
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
+	"ascend-common/common-utils/utils"
 )
 
 var (
@@ -764,4 +765,86 @@ func ConvertSchedulingPolicyToIntStr(schedulingPolicy string) string {
 
 	hwlog.RunLog.Warnf("unknown scheduling policy: %s, return empty string", schedulingPolicy)
 	return ""
+}
+
+// GetMaxVirtualIDByPhysicalID get max virtual id by physical id
+func GetMaxVirtualIDByPhysicalID(physicalID int) (int, error) {
+	baseDir, err := getNPUInfoConfigBaseDir()
+	if err != nil {
+		return MinVirtualID, err
+	}
+	virtualIDs, err := collectMatchedVirtualIDs(baseDir, physicalID)
+	if err != nil {
+		return MinVirtualID, err
+	}
+	maxVID := calculateMaxVirtualID(virtualIDs)
+	return maxVID, nil
+}
+
+func getNPUInfoConfigBaseDir() (string, error) {
+	baseDirPath := filepath.Dir(SoftShareDevNPUInfoConfigParentDirPath)
+	npuInfoCfgBaseDirPath, err := utils.RealDirChecker(baseDirPath, true, false)
+	if err != nil {
+		return "", fmt.Errorf("stat npu info config dir %s failed: %v", npuInfoCfgBaseDirPath, err)
+	}
+	return npuInfoCfgBaseDirPath, nil
+}
+
+func collectMatchedVirtualIDs(baseDir string, physicalID int) ([]int, error) {
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("read base dir %s failed: %v", baseDir, err)
+	}
+	var virtualIDs []int
+	physicalIDStr := strconv.Itoa(physicalID)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		nsAndJobDirPath := filepath.Join(baseDir, entry.Name())
+		subEntries, err := os.ReadDir(nsAndJobDirPath)
+		if err != nil {
+			hwlog.RunLog.Errorf("read dir %s failed: %v, skip\n", nsAndJobDirPath, err)
+			continue
+		}
+		for _, subEntry := range subEntries {
+			if !subEntry.IsDir() {
+				continue
+			}
+			vid, err := parseVirtualIDFromDirName(subEntry.Name(), physicalIDStr)
+			if err != nil {
+				hwlog.RunLog.Errorf("parse virtualID from dir %s failed: %v, skip\n", subEntry.Name(), err)
+				continue
+			}
+			if vid >= 0 {
+				virtualIDs = append(virtualIDs, vid)
+			}
+		}
+	}
+	return virtualIDs, nil
+}
+
+func parseVirtualIDFromDirName(dirName, physicalIDStr string) (int, error) {
+	parts := strings.Split(dirName, UnderLine)
+	if len(parts) != SoftShareDevNPUInfoConfigParentDirSplitLen {
+		return -1, fmt.Errorf("invalid dir name format %s (expect PhysicalID%sVirtualID)", dirName, UnderLine)
+	}
+	if parts[0] != physicalIDStr {
+		return -1, nil
+	}
+	vid, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return -1, fmt.Errorf("invalid VirtualID %s", parts[1])
+	}
+	return vid, nil
+}
+
+func calculateMaxVirtualID(virtualIDs []int) int {
+	maxVID := -1
+	for _, vid := range virtualIDs {
+		if vid > maxVID {
+			maxVID = vid
+		}
+	}
+	return maxVID
 }

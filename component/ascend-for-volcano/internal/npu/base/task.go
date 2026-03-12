@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -119,7 +118,6 @@ func (tp *NPUHandler) setHardwareTypeToPod(task *api.TaskInfo, node plugin.NPUNo
 
 func (tp *NPUHandler) setRealUsedNpuToPod(task *api.TaskInfo, top []int, topologyStr string, node plugin.NPUNode) {
 	nodeAllocNum := node.Allocate[v1.ResourceName(tp.GetAnnoName(tp.ReqNPUName))] / util.NPUHexKilo
-
 	if _, ok := task.Pod.Labels[util.OperatorNameLabelKey]; !ok &&
 		(len(top) != int(nodeAllocNum) || len(node.BaseDeviceInfo) == 0) {
 		return
@@ -160,12 +158,21 @@ func (tp *NPUHandler) setRealUsedNpuToPod(task *api.TaskInfo, top []int, topolog
 		klog.V(util.LogErrorLev).Infof("setNPUTopologyToPodFn marshal err: %s", err.Error())
 		return
 	}
-	task.Pod.Annotations[util.AscendNPUPodRealUse] = topologyStr
+	if !tp.isSoftShareDevJob() {
+		task.Pod.Annotations[util.AscendNPUPodRealUse] = topologyStr
+	}
 	configKey := util.Pod910DeviceKey
 	if tp.GetAnnoName("") == util.NPUCardName {
 		configKey = util.PodNPUDeviceKey
 	}
 	task.Pod.Annotations[configKey] = string(marshedInst)
+}
+
+func (tp *NPUHandler) isSoftShareDevJob() bool {
+	_, schedulingPolicyExists := tp.Label[util.SchedulerSoftShareDevPolicyKey]
+	_, aicoreQuotaExists := tp.Label[util.SchedulerSoftShareDevAicoreQuotaKey]
+	_, hbmQuotaExists := tp.Label[util.SchedulerSoftShareDevHbmQuotaKey]
+	return schedulingPolicyExists && aicoreQuotaExists && hbmQuotaExists
 }
 
 func (tp *NPUHandler) setRankIndex(task *api.TaskInfo) {
@@ -196,32 +203,4 @@ func (tp *NPUHandler) setSchedulerShareAnnoToPod(task *api.TaskInfo, node plugin
 	task.Pod.Annotations[util.SchedulerSoftShareDevPolicyKey] = schedulingPolicy
 	task.Pod.Annotations[util.SchedulerSoftShareDevAicoreQuotaKey] = aicoreQuota
 	task.Pod.Annotations[util.SchedulerSoftShareDevHbmQuotaKey] = hbmQuota
-	currentPodAscendReal, exists := task.Pod.Annotations[util.AscendNPUPodRealUse]
-	if !exists {
-		klog.V(util.LogInfoLev).Infof("task %s not exists annotation %s", task.Name, util.AscendNPUPodRealUse)
-		return
-	}
-	currentMaxVirtualNpuId := getMaxVirIdByAscendReal(node.Tasks, currentPodAscendReal)
-	task.Pod.Annotations[util.SchedulerSoftShareDevVNPUIdKey] = strconv.Itoa(currentMaxVirtualNpuId)
-}
-
-func getMaxVirIdByAscendReal(tasks map[api.TaskID]*api.TaskInfo, currentPodAscendReal string) int {
-	if tasks == nil {
-		return 0
-	}
-	var maxVirId = -1
-	for _, taskInfo := range tasks {
-		ascendReal, ascendRealExists := taskInfo.Pod.Annotations[util.AscendNPUPodRealUse]
-		virIdStr, virtualNpuIdStrExists := taskInfo.Pod.Annotations[util.SchedulerSoftShareDevVNPUIdKey]
-		if ascendRealExists && virtualNpuIdStrExists && ascendReal == currentPodAscendReal {
-			virId, err := strconv.Atoi(virIdStr)
-			if err != nil {
-				klog.V(util.LogErrorLev).Infof("setSchedulerShareAnnoToPod convert %s to int failed, err: %s",
-					virIdStr, err.Error())
-				continue
-			}
-			maxVirId = int(math.Max(float64(virId), float64(maxVirId)))
-		}
-	}
-	return maxVirId + 1
 }

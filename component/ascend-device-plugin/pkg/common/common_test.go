@@ -41,6 +41,12 @@ import (
 
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
+	"ascend-common/common-utils/utils"
+)
+
+const (
+	num3 = 3
+	num5 = 5
 )
 
 type mockFileInfo struct {
@@ -1193,5 +1199,124 @@ func TestGetDavinciManagerPath(t *testing.T) {
 				}
 			})
 		}
+	})
+}
+
+func TestGetMaxVirtualIDByPhysicalID(t *testing.T) {
+	convey.Convey("Test GetMaxVirtualIDByPhysicalID", t, func() {
+		convey.Convey("When getNPUInfoConfigBaseDir returns error", func() {
+			patches := gomonkey.ApplyFuncReturn(getNPUInfoConfigBaseDir, "", errors.New("dir not exist"))
+			defer patches.Reset()
+
+			maxVID, err := GetMaxVirtualIDByPhysicalID(0)
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(maxVID, convey.ShouldEqual, MinVirtualID)
+		})
+		convey.Convey("When collectMatchedVirtualIDs returns error", func() {
+			patches := gomonkey.ApplyFuncReturn(getNPUInfoConfigBaseDir, SoftShareDevNPUInfoConfigParentDirPath, nil)
+			patches.ApplyFuncReturn(collectMatchedVirtualIDs, nil, errors.New("read dir failed"))
+			defer patches.Reset()
+
+			maxVID, err := GetMaxVirtualIDByPhysicalID(0)
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(maxVID, convey.ShouldEqual, MinVirtualID)
+		})
+		convey.Convey("When all steps success, return max VirtualID", func() {
+			patches := gomonkey.ApplyFuncReturn(getNPUInfoConfigBaseDir, SoftShareDevNPUInfoConfigParentDirPath, nil)
+			patches.ApplyFuncReturn(collectMatchedVirtualIDs, []int{1, num5, num3}, nil)
+			patches.ApplyFuncReturn(calculateMaxVirtualID, num5)
+			defer patches.Reset()
+
+			maxVID, err := GetMaxVirtualIDByPhysicalID(0)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(maxVID, convey.ShouldEqual, num5)
+		})
+		convey.Convey("When no matched VirtualID, return -1", func() {
+			patches := gomonkey.ApplyFuncReturn(getNPUInfoConfigBaseDir, SoftShareDevNPUInfoConfigParentDirPath, nil)
+			patches.ApplyFuncReturn(collectMatchedVirtualIDs, []int{}, nil)
+			defer patches.Reset()
+
+			maxVID, err := GetMaxVirtualIDByPhysicalID(0)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(maxVID, convey.ShouldEqual, -1)
+		})
+	})
+}
+
+func TestGetNPUInfoConfigBaseDir(t *testing.T) {
+	convey.Convey("Test getNPUInfoConfigBaseDir", t, func() {
+		convey.Convey("When RealDirChecker returns error", func() {
+			patches := gomonkey.ApplyFuncReturn(utils.RealDirChecker, "", errors.New("dir not exist"))
+			defer patches.Reset()
+			dirPath, err := getNPUInfoConfigBaseDir()
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(dirPath, convey.ShouldBeEmpty)
+			convey.So(err.Error(), convey.ShouldContainSubstring, "stat npu info config dir")
+		})
+		convey.Convey("When RealDirChecker success", func() {
+			patches := gomonkey.ApplyFuncReturn(utils.RealDirChecker, SoftShareDevNPUInfoConfigParentDirPath, nil)
+			defer patches.Reset()
+			dirPath, err := getNPUInfoConfigBaseDir()
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(dirPath, convey.ShouldEqual, SoftShareDevNPUInfoConfigParentDirPath)
+		})
+	})
+}
+
+func TestCollectMatchedVirtualIDs(t *testing.T) {
+	convey.Convey("Test collectMatchedVirtualIDs", t, func() {
+		convey.Convey("When os.ReadDir base dir returns error", func() {
+			patches := gomonkey.ApplyFuncReturn(os.ReadDir, nil, errors.New("permission denied"))
+			defer patches.Reset()
+			vidList, err := collectMatchedVirtualIDs(SoftShareDevNPUInfoConfigParentDirPath, 0)
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(vidList, convey.ShouldBeNil)
+			convey.So(err.Error(), convey.ShouldContainSubstring, "read base dir")
+		})
+
+		convey.Convey("When os.ReadDir sub dir returns error", func() {
+			patches := gomonkey.ApplyFuncReturn(os.ReadDir, nil, errors.New("dir not exist"))
+			defer patches.Reset()
+			vidList, err := collectMatchedVirtualIDs(SoftShareDevNPUInfoConfigParentDirPath, 0)
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(vidList, convey.ShouldBeEmpty)
+		})
+	})
+}
+
+func TestParseVirtualIDFromDirName(t *testing.T) {
+	convey.Convey("Test parseVirtualIDFromDirName", t, func() {
+		physicalIDStr := strconv.Itoa(0)
+		convey.Convey("When dir name format is invalid", func() {
+			vid, err := parseVirtualIDFromDirName("100", physicalIDStr)
+			convey.So(err, convey.ShouldNotBeNil)
+			convey.So(vid, convey.ShouldEqual, -1)
+			convey.So(err.Error(), convey.ShouldContainSubstring, "invalid dir name format")
+		})
+
+		convey.Convey("When PhysicalID not match", func() {
+			vid, err := parseVirtualIDFromDirName("200_5", physicalIDStr)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(vid, convey.ShouldEqual, -1)
+		})
+
+		convey.Convey("When parse success", func() {
+			vid, err := parseVirtualIDFromDirName("0_1", physicalIDStr)
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(vid, convey.ShouldEqual, 1)
+		})
+	})
+}
+
+func TestCalculateMaxVirtualID(t *testing.T) {
+	convey.Convey("Test calculateMaxVirtualID", t, func() {
+		convey.Convey("When virtualIDs is empty", func() {
+			maxVID := calculateMaxVirtualID([]int{})
+			convey.So(maxVID, convey.ShouldEqual, -1)
+		})
+		convey.Convey("When virtualIDs has multiple elements", func() {
+			maxVID := calculateMaxVirtualID([]int{1, num5, num3})
+			convey.So(maxVID, convey.ShouldEqual, num5)
+		})
 	})
 }

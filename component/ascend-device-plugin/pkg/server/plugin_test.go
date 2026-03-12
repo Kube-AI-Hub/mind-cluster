@@ -282,7 +282,7 @@ func TestAllocateRequestPhysicalDevice(t *testing.T) {
 			ps.deepCopyDevice(devices)
 			deviceID := "1"
 			requests.ContainerRequests = []*v1beta1.
-				ContainerAllocateRequest{{DevicesIDs: []string{api.Ascend910 + "-" + deviceID}}}
+			ContainerAllocateRequest{{DevicesIDs: []string{api.Ascend910 + "-" + deviceID}}}
 			resp, err := ps.Allocate(context.Background(), &requests)
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(resp, convey.ShouldNotBeNil)
@@ -304,14 +304,14 @@ func TestAllocateRequestVirtualDevice(t *testing.T) {
 		convey.Convey("request more than 1 virtual device", func() {
 			ps.cachedDevices = []common.NpuDevice{{DevType: common.Ascend910vir2, DeviceName: "Ascend910-2c-100-0"}}
 			requests.ContainerRequests = []*v1beta1.
-				ContainerAllocateRequest{{DevicesIDs: []string{"Ascend910-2c-100-0", "Ascend910-2c-100-1"}}}
+			ContainerAllocateRequest{{DevicesIDs: []string{"Ascend910-2c-100-0", "Ascend910-2c-100-1"}}}
 			_, err := ps.Allocate(context.Background(), &requests)
 			convey.So(err, convey.ShouldNotBeNil)
 		})
 		convey.Convey("request virtual device not exist", func() {
 			ps.cachedDevices = []common.NpuDevice{{DevType: common.Ascend910vir2, DeviceName: "Ascend910-2c-100-0"}}
 			requests.ContainerRequests = []*v1beta1.
-				ContainerAllocateRequest{{DevicesIDs: []string{"Ascend910-2c-100-1"}}}
+			ContainerAllocateRequest{{DevicesIDs: []string{"Ascend910-2c-100-1"}}}
 			_, err := ps.Allocate(context.Background(), &requests)
 			convey.So(err, convey.ShouldNotBeNil)
 		})
@@ -323,7 +323,7 @@ func TestAllocateRequestVirtualDevice(t *testing.T) {
 			ps.cachedDevices = []common.NpuDevice{{DevType: common.Ascend910vir2,
 				DeviceName: api.Ascend910 + "-2c-" + deviceID + "-0"}}
 			requests.ContainerRequests = []*v1beta1.
-				ContainerAllocateRequest{{DevicesIDs: []string{api.Ascend910 + "-2c-" + deviceID + "-0"}}}
+			ContainerAllocateRequest{{DevicesIDs: []string{api.Ascend910 + "-2c-" + deviceID + "-0"}}}
 			resp, err := ps.Allocate(context.Background(), &requests)
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(resp, convey.ShouldNotBeNil)
@@ -1249,7 +1249,6 @@ func buildExtractPodAnnotationsTestCases1() []extractPodAnnotationsTestCase {
 		{
 			name: "all annotations exist and non-empty, policy converted",
 			pod: &v1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{
-				api.SchedulerSoftShareDevVNPUIdKey:      mockValidVNPUId,
 				api.SchedulerSoftShareDevAicoreQuotaKey: mockValidAicoreQuota,
 				api.SchedulerSoftShareDevHbmQuotaKey:    mockValidHbmQuota,
 				api.SchedulerSoftShareDevPolicyKey:      mockValidPolicyStr,
@@ -1258,7 +1257,6 @@ func buildExtractPodAnnotationsTestCases1() []extractPodAnnotationsTestCase {
 				return mockConvertedPolicy
 			},
 			expectedAnnotations: softShareDevAnnotations{
-				vNPUId:           mockValidVNPUId,
 				aicoreQuota:      mockValidAicoreQuota,
 				hbmQuota:         mockValidHbmQuota,
 				schedulingPolicy: mockConvertedPolicy,
@@ -1266,22 +1264,8 @@ func buildExtractPodAnnotationsTestCases1() []extractPodAnnotationsTestCase {
 			expectedErr: false,
 		},
 		{
-			name: "missing single annotation (vNPUId)",
-			pod: &v1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{
-				api.SchedulerSoftShareDevAicoreQuotaKey: mockValidAicoreQuota,
-				api.SchedulerSoftShareDevHbmQuotaKey:    mockValidHbmQuota,
-				api.SchedulerSoftShareDevPolicyKey:      mockValidPolicyStr,
-			}}},
-			mockConvertPolicy: func() string {
-				return mockConvertedPolicy
-			},
-			expectedAnnotations: softShareDevAnnotations{},
-			expectedErr:         true,
-		},
-		{
 			name: "multiple annotations value empty",
 			pod: &v1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{
-				api.SchedulerSoftShareDevVNPUIdKey:      mockValidVNPUId,
 				api.SchedulerSoftShareDevAicoreQuotaKey: "",
 				api.SchedulerSoftShareDevHbmQuotaKey:    "",
 				api.SchedulerSoftShareDevPolicyKey:      mockValidPolicyStr,
@@ -1322,7 +1306,6 @@ func buildExtractPodAnnotationsTestCases2() []extractPodAnnotationsTestCase {
 			pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						api.SchedulerSoftShareDevVNPUIdKey:      mockValidVNPUId,
 						api.SchedulerSoftShareDevAicoreQuotaKey: mockValidAicoreQuota,
 						api.SchedulerSoftShareDevHbmQuotaKey:    mockValidHbmQuota,
 						api.SchedulerSoftShareDevPolicyKey:      "",
@@ -1436,24 +1419,17 @@ func TestBuildConfigDirPath(t *testing.T) {
 type npuConfigFileTestCase struct {
 	name               string
 	configDir          string
-	physicalID         int
-	dieId              string
 	annotations        softShareDevAnnotations
 	mockWriteFileErr   error
 	expectedErr        bool
 	expectedConfigData string
 }
 
-func getTestBaseConfig() (string, int, string) {
-	configDir := "/etc/ascend/config"
-	physicalID := 0
-	dieId := "die-001"
-	return configDir, physicalID, dieId
-}
-
 func buildValidAnnotations() softShareDevAnnotations {
 	return softShareDevAnnotations{
+		physicalId:       "0",
 		vNPUId:           "vnpu-001",
+		dieId:            "die-001",
 		aicoreQuota:      "50",
 		hbmQuota:         "2048",
 		schedulingPolicy: "2",
@@ -1482,17 +1458,13 @@ func buildValidConfigData() string {
 
 func buildPartialEmptyConfigData() string {
 	return strings.Join([]string{
-		api.SoftShareDeviceConfigPhysicalNPUId + "=0",
 		api.SoftShareDeviceConfigAICoreQuota + "=50",
-		api.SoftShareDeviceConfigShmId + "=die-001",
 		api.SoftShareDeviceConfigSchedulingPolicy + "=2",
 	}, "\n")
 }
 
 func buildNpuConfigFileTestCases() []npuConfigFileTestCase {
 	configDir := "/etc/ascend/config"
-	physicalID := 0
-	dieId := "die-001"
 	validAnnot := buildValidAnnotations()
 	partialEmptyAnnot := buildPartialEmptyAnnotations()
 	validConfigData := buildValidConfigData()
@@ -1501,8 +1473,6 @@ func buildNpuConfigFileTestCases() []npuConfigFileTestCase {
 		{
 			name:               "all config items non-empty, write file success",
 			configDir:          configDir,
-			physicalID:         physicalID,
-			dieId:              dieId,
 			annotations:        validAnnot,
 			mockWriteFileErr:   nil,
 			expectedErr:        false,
@@ -1511,8 +1481,6 @@ func buildNpuConfigFileTestCases() []npuConfigFileTestCase {
 		{
 			name:               "partial config items empty, skip empty and write valid",
 			configDir:          configDir,
-			physicalID:         physicalID,
-			dieId:              dieId,
 			annotations:        partialEmptyAnnot,
 			mockWriteFileErr:   nil,
 			expectedErr:        false,
@@ -1521,8 +1489,6 @@ func buildNpuConfigFileTestCases() []npuConfigFileTestCase {
 		{
 			name:               "write file failed, return wrapped error",
 			configDir:          configDir,
-			physicalID:         physicalID,
-			dieId:              dieId,
 			annotations:        validAnnot,
 			mockWriteFileErr:   errors.New("permission denied"),
 			expectedErr:        true,
@@ -1546,7 +1512,7 @@ func TestWriteNPUConfigFile(t *testing.T) {
 						return tt.mockWriteFileErr
 					})
 				defer patchWriteFile.Reset()
-				err := ps.writeNPUConfigFile(tt.configDir, tt.physicalID, tt.dieId, tt.annotations)
+				err := ps.writeNPUConfigFile(tt.configDir, tt.annotations)
 				if tt.expectedErr {
 					convey.So(err, convey.ShouldNotBeNil)
 				} else {
