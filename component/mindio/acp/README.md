@@ -65,18 +65,21 @@ mind-cluster
 pip3 install mindio_acp-${mindio_acp_version}-py3-none-linux_${arch}.whl --force-reinstall
 ```
 
-### 用户指南
-`MindIO ACP`提供给开发者的的资料如下：
+### 接口说明
+`MindIO ACP`提供如下接口：
 
-[《MindIO ACP用户指南》](https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindioacp/mindioacp001.html)
+[《API接口参考》](./doc/Interface_description/API接口参考.md)
 
-请根据用户指南了解`MindIO ACP`相关约束限制，进行安装，使用，管理与加固。
+### 环境变量说明
+`MindIO ACP`涉及如下环境变量：
+
+[《环境变量》](./doc/环境变量.md)
 
 ### 源码内公网地址
  
 | 类型   | 开源代码地址      | 文件名      | 公网IP地址/公网URL地址/域名/邮箱地址 | 用途说明            |
 |------  |-----------------|-------------|---------------------               |-------------------|
-| 代码仓地址  | https://gitee.com/openeuler/libboundscheck.git | .gitmodules | https://gitee.com/openeuler/libboundscheck.git | 依赖三方库 |
+| 代码仓地址  | https://atomgit.com/openeuler/libboundscheck.git | .gitmodules | https://atomgit.com/openeuler/libboundscheck.git | 依赖三方库 |
 | 代码仓地址  | https://github.com/gabime/spdlog.git | .gitmodules | https://github.com/gabime/spdlog.git | 依赖三方库 |
-| 代码仓地址  | https://gitee.com/openeuler/ubs-comm.git | .gitmodules | https://gitee.com/openeuler/ubs-comm.git | 依赖三方库 |
+| 代码仓地址  | https://atomgit.com/openeuler/ubs-comm.git | .gitmodules | https://atomgit.com/openeuler/ubs-comm.git | 依赖三方库 |
 | license 地址 | 不涉及 | LICENSE | http://www.apache.org/licenses/LICENSE-2.0 | license文件 |

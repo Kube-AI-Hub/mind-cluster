@@ -85,7 +85,7 @@ cd ${PROJ_DIR}
 if [[ ! -d ${PROJ_DIR}/3rdparty/libboundscheck/libboundscheck ]]; then
     echo "Trying to git clone libboundscheck ..."
     cd ${PROJ_DIR}/3rdparty/libboundscheck
-    git clone https://gitee.com/openeuler/libboundscheck.git
+    git clone https://atomgit.com/openeuler/libboundscheck.git
     cd ${PROJ_DIR}/3rdparty/libboundscheck/libboundscheck
     git checkout v1.1.16
 fi
