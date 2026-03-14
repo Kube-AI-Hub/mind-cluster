@@ -640,8 +640,8 @@ type DcDriverInterface interface {
 	DcGetSuperPodStatus(int32, int32, uint32) (int, error)
 	DcSetSuperPodStatus(int32, int32, uint32, uint32) error
 	DcGetCardElabelV2(int32) (common.ElabelInfo, error)
-	DcGetMultiDiePolicy() (uint32, error)
-	DcSetMultiDiePolicy(uint32) error
+	DcGetMultiDiePolicy() (DiePolicyType, error)
+	DcSetMultiDiePolicy(DiePolicyType) error
 
 	// DcGetUrmaDeviceCount for A5
 	DcGetUrmaDeviceCount(int32, int32) (int32, error)
@@ -2466,17 +2466,17 @@ func (d *DcManager) DcGetDeviceIdInCard(cardID int32) (int32, error) {
 }
 
 // DcGetMultiDiePolicy get multi die policy
-func (d *DcManager) DcGetMultiDiePolicy() (uint32, error) {
-	var policy C.uint
+func (d *DcManager) DcGetMultiDiePolicy() (DiePolicyType, error) {
+	var policy C.enum_dcmi_multi_die_policy
 	if retCode := C.dcmi_get_multi_die_policy(&policy); int32(retCode) != common.Success {
 		return 0, fmt.Errorf("get multi die policy failed, error code: %v", retCode)
 	}
-	return uint32(policy), nil
+	return DiePolicyType(policy), nil
 }
 
 // DcSetMultiDiePolicy set multi die policy
-func (d *DcManager) DcSetMultiDiePolicy(policy uint32) error {
-	if retCode := C.dcmi_set_multi_die_policy(C.uint(policy)); int32(retCode) != common.Success {
+func (d *DcManager) DcSetMultiDiePolicy(policy DiePolicyType) error {
+	if retCode := C.dcmi_set_multi_die_policy(C.enum_dcmi_multi_die_policy(policy)); int32(retCode) != common.Success {
 		return fmt.Errorf("set multi die policy failed, error code: %v", retCode)
 	}
 	return nil

@@ -393,11 +393,11 @@ func (d *DeviceManagerMockErr) GetCardElabelV2(cardID int32) (common.ElabelInfo,
 }
 
 // GetMultiDiePolicy get multi die policy
-func (d *DeviceManagerMockErr) GetMultiDiePolicy() (uint32, error) {
+func (d *DeviceManagerMockErr) GetMultiDiePolicy() (dcmi.DiePolicyType, error) {
 	return 0, errors.New(errorMsg)
 }
 
 // SetMultiDiePolicy set multi die policy
-func (d *DeviceManagerMockErr) SetMultiDiePolicy(policy uint32) error {
+func (d *DeviceManagerMockErr) SetMultiDiePolicy(policy dcmi.DiePolicyType) error {
 	return errors.New(errorMsg)
 }

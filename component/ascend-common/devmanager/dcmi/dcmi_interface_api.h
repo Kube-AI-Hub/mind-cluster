@@ -189,6 +189,12 @@ enum dcmi_die_type {
     VDIE
 };
 
+enum dcmi_multi_die_policy {
+    DCMI_MULTI_DIE_UNION_POLICY = 0, // A3 multi-die must be supplied into the container simultaneously
+    DCMI_MULTI_DIE_INDEP_POLICY = 1, // A3 supports single-die independent injection into the container
+    DCMI_MULTI_DIE_POLICY_MAX = 2
+};
+
 #define DCMI_VDEV_RES_NAME_LEN 16
 #define DCMI_VDEV_SIZE 20
 #define DCMI_VDEV_FOR_RESERVE 32
@@ -640,9 +646,9 @@ DCMIDLLEXPORT int dcmi_get_spod_node_status(int card_id, int device_id, unsigned
 
 DCMIDLLEXPORT int dcmi_set_spod_node_status(int card_id, int device_id, unsigned int sdid, unsigned int status);
 
-DCMIDLLEXPORT int dcmi_get_multi_die_policy(unsigned int *policy);
+DCMIDLLEXPORT int dcmi_get_multi_die_policy(enum dcmi_multi_die_policy *policy);
 
-DCMIDLLEXPORT int dcmi_set_multi_die_policy(unsigned int policy);
+DCMIDLLEXPORT int dcmi_set_multi_die_policy(enum dcmi_multi_die_policy policy);
 
 // UB Ping Mesh API for A5 -- start
 DCMIDLLEXPORT int dcmi_start_ub_ping_mesh(int card_id, int device_id, int count,

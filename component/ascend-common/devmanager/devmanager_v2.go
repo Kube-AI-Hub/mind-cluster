@@ -901,13 +901,13 @@ func (d *DeviceManagerV2) GetUrmaDevEidListAll(logicID int32) ([]common.UrmaDevi
 }
 
 // GetMultiDiePolicy get multi die policy
-func (d *DeviceManagerV2) GetMultiDiePolicy() (uint32, error) {
+func (d *DeviceManagerV2) GetMultiDiePolicy() (dcmi.DiePolicyType, error) {
 	hwlog.RunLog.Errorf("get multi die policy failed, error: %v", errNotSupportedInDcmiV2)
 	return 0, fmt.Errorf("get multi die policy failed, error: %v", errNotSupportedInDcmiV2)
 }
 
 // SetMultiDiePolicy set multi die policy
-func (d *DeviceManagerV2) SetMultiDiePolicy(policy uint32) error {
+func (d *DeviceManagerV2) SetMultiDiePolicy(policy dcmi.DiePolicyType) error {
 	hwlog.RunLog.Errorf("set multi die policy failed, error: %v", errNotSupportedInDcmiV2)
 	return fmt.Errorf("set multi die policy failed, error: %v", errNotSupportedInDcmiV2)
 }

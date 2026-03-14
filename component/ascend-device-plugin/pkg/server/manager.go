@@ -44,6 +44,7 @@ import (
 	"ascend-common/common-utils/hwlog"
 	"ascend-common/devmanager"
 	npuCommon "ascend-common/devmanager/common"
+	"ascend-common/devmanager/dcmi"
 )
 
 var resourceVersion = ""
@@ -1753,7 +1754,7 @@ func checkOverRetryDev(info device.ResetInfo) device.ResetInfo {
 	return ret
 }
 
-func (hdm *HwDevManager) DoSetMultiDiePolicyForA3(policy uint32) {
+func (hdm *HwDevManager) DoSetMultiDiePolicyForA3(policy dcmi.DiePolicyType) {
 	if hdm.manager.GetDmgr().GetDevType() != api.Ascend910A3 {
 		return
 	}
