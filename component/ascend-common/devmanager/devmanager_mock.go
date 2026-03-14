@@ -402,11 +402,11 @@ func (d *DeviceManagerMock) GetSuperPodStatus(int32, uint32) (int, error) { retu
 func (d *DeviceManagerMock) SetSuperPodStatus(int32, uint32, uint32) error { return nil }
 
 // GetMultiDiePolicy get multi die policy
-func (d *DeviceManagerMock) GetMultiDiePolicy() (uint32, error) {
+func (d *DeviceManagerMock) GetMultiDiePolicy() (dcmi.DiePolicyType, error) {
 	return 0, nil
 }
 
 // SetMultiDiePolicy set multi die policy
-func (d *DeviceManagerMock) SetMultiDiePolicy(policy uint32) error {
+func (d *DeviceManagerMock) SetMultiDiePolicy(policy dcmi.DiePolicyType) error {
 	return nil
 }

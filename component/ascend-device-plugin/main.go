@@ -30,6 +30,7 @@ import (
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
 	"ascend-common/common-utils/utils"
+	"ascend-common/devmanager/dcmi"
 )
 
 const (
@@ -284,7 +285,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	hdm.DoSetMultiDiePolicyForA3(common.SingleDieMode)
+	hdm.DoSetMultiDiePolicyForA3(dcmi.MultiDieIndep)
 	setUseAscendDocker()
 	go hdm.ListenDevice(ctx)
 	go hdm.ListenDpu(ctx)

@@ -24,6 +24,9 @@ type VDevMngSubCmd uint32
 // DieType present chip die type
 type DieType int32
 
+// DiePolicyType die policy type
+type DiePolicyType uint32
+
 const (
 	// DcmiMaxVdevNum is max number of vdevice, value is from driver specification
 	DcmiMaxVdevNum = 32
@@ -76,4 +79,9 @@ const (
 	// HexBase hex base number
 	HexBase             = 16
 	AgentdrvProfDataNum = 3
+
+	// MultiDieUnion A3 multi-die must be supplied into the container simultaneously
+	MultiDieUnion DiePolicyType = 0
+	// MultiDieIndep A3 supports single-die independent injection into the container
+	MultiDieIndep DiePolicyType = 1
 )

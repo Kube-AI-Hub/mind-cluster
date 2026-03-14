@@ -100,8 +100,8 @@ type DeviceInterface interface {
 	GetHccsPingMeshState(logicID int32, portID int, taskID uint) (int, error)
 	GetSuperPodStatus(int32, uint32) (int, error)
 	SetSuperPodStatus(int32, uint32, uint32) error
-	GetMultiDiePolicy() (uint32, error)
-	SetMultiDiePolicy(uint32) error
+	GetMultiDiePolicy() (dcmi.DiePolicyType, error)
+	SetMultiDiePolicy(dcmi.DiePolicyType) error
 
 	// GetUrmaDeviceCount for A5
 	GetUrmaDeviceCount(int32) (int32, error)
@@ -1393,11 +1393,11 @@ func (d *DeviceManager) GetUrmaDevEidListAll(logicID int32) ([]common.UrmaDevice
 }
 
 // GetMultiDiePolicy get multi die policy
-func (d *DeviceManager) GetMultiDiePolicy() (uint32, error) {
+func (d *DeviceManager) GetMultiDiePolicy() (dcmi.DiePolicyType, error) {
 	return d.DcMgr.DcGetMultiDiePolicy()
 }
 
 // SetMultiDiePolicy set multi die policy
-func (d *DeviceManager) SetMultiDiePolicy(policy uint32) error {
+func (d *DeviceManager) SetMultiDiePolicy(policy dcmi.DiePolicyType) error {
 	return d.DcMgr.DcSetMultiDiePolicy(policy)
 }

@@ -852,8 +852,6 @@ const (
 	SoftShareDevNPUInfoConfigParentDirPath = "/etc/enpu/"
 	// SoftShareDevNPUInfoConfigDirContainerPath soft share device npu info config dir in container
 	SoftShareDevNPUInfoConfigDirContainerPath = "/etc/enpu/vcann-rt/"
-	// SingleDieMode single die mode
-	SingleDieMode = 1
 	// MinVirtualID min virtual id
 	MinVirtualID = 0
 	// SoftShareDevNPUInfoConfigParentDirSplitLen split length of soft share device npu info config parent dir
