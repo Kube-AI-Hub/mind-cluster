@@ -22,13 +22,11 @@ import (
 )
 
 const (
-	prefix91095      = "Ascend950"
-	prefix91095Older = "910"
-	chipNameMaxLen   = 32
+	prefix91095    = "Ascend950"
+	chipNameMaxLen = 32
 )
 
 // Is910A5Chip current chip is 910A5 or not
 func Is910A5Chip(chipName string) bool {
-	return len(chipName) <= chipNameMaxLen && (strings.HasPrefix(chipName, prefix91095) ||
-		strings.HasPrefix(chipName, prefix91095Older))
+	return len(chipName) <= chipNameMaxLen && strings.HasPrefix(chipName, prefix91095)
 }
