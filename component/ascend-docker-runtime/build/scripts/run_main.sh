@@ -624,8 +624,17 @@ if [ "${INSTALL_PATH_FLAG}" == "y" ] && \
    [ "${INSTALL_FLAG}" == "n" ] && \
    [ "${UNINSTALL_FLAG}" == "n" ] && \
    [ "${UPGRADE_FLAG}" == "n" ]; then
-      log "[ERROR]" "failed, only input <install_path> command. When use --install-path you also need intput --install or --uninstall or --upgrade"
+      log "[ERROR]" "failed, only input <install_path> command. When use --install-path you also need input --install or --uninstall or --upgrade"
       exit 1
+fi
+
+ # it is not allowed to input only install-scene
+if [ "${INSTALL_SCENE_FLAG}" == "y" ] && \
+    [ "${INSTALL_FLAG}" == "n" ] && \
+    [ "${UNINSTALL_FLAG}" == "n" ] && \
+    [ "${UPGRADE_FLAG}" == "n" ]; then
+        log "[ERROR]" "failed, only input <install-scene> command. When use --install-scene you also need input --install or --uninstall or --upgrade"
+        exit 1
 fi
 
 if [ "${INSTALL_FLAG}" == "y" ]; then
