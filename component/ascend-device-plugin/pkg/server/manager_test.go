@@ -23,6 +23,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -2117,5 +2118,49 @@ func TestUpdateQuota(t *testing.T) {
 			convey.So(hdm.allInfo.AllDevs[1].UsedAicoreQuota, convey.ShouldEqual, 0)
 			convey.So(hdm.allInfo.AllDevs[1].UsedHbmQuota, convey.ShouldEqual, 0)
 		})
+	})
+}
+
+func TestLoadDeviceFaultFromUpgradeReason(t *testing.T) {
+	convey.Convey("Test loadDeviceFaultFromUpgradeReason", t, func() {
+		manager := device.NewHwAscend910Manager()
+		hdm := &HwDevManager{
+			groupDevice: map[string][]*common.NpuDevice{api.Ascend910: {{LogicID: 0}}},
+			allInfo:     common.NpuAllInfo{},
+			manager:     manager,
+		}
+		patches := gomonkey.NewPatches()
+		defer patches.Reset()
+		addLinkdown := atomic.Bool{}
+		addAic := atomic.Bool{}
+		initLogicIDs := make([]int32, 0)
+		patches.ApplyFunc(common.GetUpgradeFaultLevelAndTime, func(int32, string) map[int64]common.FaultTimeAndLevel {
+			res := make(map[int64]common.FaultTimeAndLevel)
+			res[common.LinkDownFaultCode] = common.FaultTimeAndLevel{
+				FaultTime:  0,
+				FaultLevel: common.PreSeparateNPU,
+			}
+			res[common.AicBusFaultCode] = common.FaultTimeAndLevel{
+				FaultTime:  0,
+				FaultLevel: common.RestartRequest,
+			}
+			return res
+		}).ApplyFunc(common.DoSaveDevFaultInfo, func(devFaultInfo npuCommon.DevFaultInfo, enableDelay bool) {
+			if devFaultInfo.EventID == common.LinkDownFaultCode {
+				addLinkdown.Store(true)
+			}
+			if devFaultInfo.EventID == common.AicBusFaultCode {
+				addAic.Store(true)
+			}
+		}).ApplyFunc(common.SetDeviceInit, func(logicID int32) {
+			initLogicIDs = append(initLogicIDs, logicID)
+		}).ApplyMethod(manager, "UpdateHealth",
+			func(*device.HwAscend910Manager, map[string][]*common.NpuDevice, []*common.NpuDevice, string) {})
+		hdm.loadDeviceFaultFromUpgradeReason()
+
+		convey.So(addLinkdown.Load(), convey.ShouldBeTrue)
+		convey.So(addAic.Load(), convey.ShouldBeTrue)
+		convey.So(len(initLogicIDs), convey.ShouldNotBeZeroValue)
+		convey.So(initLogicIDs[0], convey.ShouldEqual, 0)
 	})
 }

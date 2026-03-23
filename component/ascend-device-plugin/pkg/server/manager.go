@@ -558,8 +558,33 @@ func (hdm *HwDevManager) loadFaultCodeAndDeviceInfoCm(ctx context.Context) {
 	// when device-plugin is started, the value of ManuallySeparateNPU and upgrade fault reason in device info configmap
 	// needs to be written into cache to prevent manually separate npu IDs in cache from been lost
 	interval := hdm.loadFaultCode()
+	hwlog.RunLog.Infof("init poll interval is %d", interval)
 	hdm.manager.LoadDeviceInfoCm(ctx)
+	hdm.loadDeviceFaultFromUpgradeReason()
 	go hdm.pollFaultCodeCM(ctx, interval)
+}
+
+func (hdm *HwDevManager) loadDeviceFaultFromUpgradeReason() {
+	for _, devices := range hdm.groupDevice {
+		for _, npuDevice := range devices {
+			faultLevelAndTime := common.GetUpgradeFaultLevelAndTime(npuDevice.LogicID, common.AllFaultMode)
+			for code, levelAndTime := range faultLevelAndTime {
+				faultInfo := npuCommon.DevFaultInfo{
+					EventID:         code,
+					LogicID:         npuDevice.LogicID,
+					Assertion:       npuCommon.FaultOccur,
+					AlarmRaisedTime: levelAndTime.FaultTime,
+				}
+				common.DoSaveDevFaultInfo(faultInfo, false)
+			}
+		}
+	}
+	hdm.manager.UpdateHealth(hdm.groupDevice, hdm.allInfo.AICoreDevs, hdm.RunMode)
+	for _, devices := range hdm.groupDevice {
+		for _, npuDevice := range devices {
+			common.SetDeviceInit(npuDevice.LogicID)
+		}
+	}
 }
 
 // ListenDevice ListenDevice coroutine
