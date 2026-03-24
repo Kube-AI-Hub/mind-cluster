@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/common/util"
+	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/internal/npu/ascend910/ascend910a3/superpod"
 	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/plugin"
 )
 
@@ -127,6 +128,41 @@ func TestInit910CardPolicyHandler(t *testing.T) {
 			handlerName := get910CardHandlerName(attr)
 			if handlerName != policy910HandlerMap[config] {
 				t.Errorf("Expect handler name to be %s, got %s", policy910HandlerMap[config], handlerName)
+			}
+		})
+	}
+}
+
+type getA3AcceleratorTypeTest struct {
+	selector    string
+	wantHandler string
+}
+
+func TestGetA3AcceleratorType(t *testing.T) {
+	configs := []getA3AcceleratorTypeTest{
+		{
+			selector:    util.Module910A3x8SuperPodAcceleratorType,
+			wantHandler: superpod.A3x8SchedulerName,
+		},
+		{
+			selector:    util.Module910A3x16SuperPodAcceleratorType,
+			wantHandler: superpod.A3x16SchedulerName,
+		},
+	}
+	for _, config := range configs {
+		name := fmt.Sprintf("When node selector is %s then handleName is %s",
+			config.selector, config.wantHandler)
+		t.Run(name, func(t *testing.T) {
+			attr := util.SchedulerJobAttr{
+				ComJob: util.ComJob{
+					Selector: map[string]string{
+						util.AcceleratorType: config.selector,
+					},
+				},
+			}
+			handlerName := getA3HandlerNameWithSpBlock(attr)
+			if handlerName != config.wantHandler {
+				t.Errorf("Expect handler name to be %s, got %s", config.wantHandler, handlerName)
 			}
 		})
 	}
