@@ -228,7 +228,7 @@ func get910CardHandlerName(attr util.SchedulerJobAttr) string {
 	}
 	// if only field sp-block is specified, set schedule policy to atlas 900 super-pod as default
 	if _, ok := attr.Annotation[util.SuperPodAnnoKey]; ok {
-		return superpod.A3x16SchedulerName
+		return getA3HandlerNameWithSpBlock(attr)
 	}
 	v, ok := attr.Selector[util.AcceleratorType]
 	if !ok {
@@ -238,6 +238,14 @@ func get910CardHandlerName(attr util.SchedulerJobAttr) string {
 		return util.NPU910CardName + cardAcceleratorValue
 	}
 	return util.NPU910CardName + v
+}
+
+func getA3HandlerNameWithSpBlock(attr util.SchedulerJobAttr) string {
+	v, ok := attr.Selector[util.AcceleratorType]
+	if ok && v == util.Module910A3x8SuperPodAcceleratorType {
+		return superpod.A3x8SchedulerName
+	}
+	return superpod.A3x16SchedulerName
 }
 
 func init310PCardPolicyHandler(attr util.SchedulerJobAttr) (plugin.SchedulerPluginNeed, bool) {
