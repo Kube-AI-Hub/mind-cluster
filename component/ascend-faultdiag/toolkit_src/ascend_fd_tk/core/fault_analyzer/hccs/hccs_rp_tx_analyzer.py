@@ -205,7 +205,7 @@ class HCCSAnalyzer(HCCSCommonAnalyzer):
             lcne_info = self.get_lcne_info(interface.server_id, interface.interface_name)
             diag_results.extend(self.check_local_interface(swi_info, lcne_info))
             # 对端问题
-            self.check_remote_interfaces(swi_info, lcne_info, remote_interfaces)
+            diag_results.extend(self.check_remote_interfaces(swi_info, lcne_info, remote_interfaces))
         return diag_results
 
     def l2_diag(self, local_lcne_info: LCNEInfo, remote_lcne_info: LCNEInfo):
