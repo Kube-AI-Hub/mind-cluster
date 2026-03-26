@@ -88,10 +88,8 @@ class BusParser(FileParser):
         self.start_time = self.params.get("start_time")
         self.end_time = self.params.get("end_time")
         file_path_list = list(chain(*file_path_dict.values()))
-        # 过滤出有效的日志文件
         filtered_file_list = self.filter_files_in_range(file_path_list)
 
-        # 单文件清洗
         multiprocess_job = MultiProcessJob("KNOWLEDGE_GRAPH", pool_size=len(filtered_file_list), task_id=task_id)
         for idx, file_path in enumerate(filtered_file_list):
             multiprocess_job.add_security_job(f"{self.SOURCE_FILE}_ID-{idx}_{os.path.basename(file_path)}",
@@ -99,6 +97,75 @@ class BusParser(FileParser):
         results, _ = multiprocess_job.join_and_get_results()
         kg_logger.info("%s files parse job is complete.", self.SOURCE_FILE)
         return list(chain(*results.values())), {}
+
+    def collect(self, parse_ctx: KGParseCtx, task_id: str):
+        """
+        Collect raw events without time filtering.
+        """
+        file_path_dict = self.find_log(parse_ctx.parse_file_path)
+        if not file_path_dict:
+            return [], {}, {}
+        kg_logger.info("%s files parse job started.", self.SOURCE_FILE)
+        file_path_list = list(chain(*file_path_dict.values()))
+        all_file_list = self._get_all_log_files(file_path_list)
+        multiprocess_job = MultiProcessJob("KNOWLEDGE_GRAPH", pool_size=len(all_file_list), task_id=task_id)
+        for idx, file_path in enumerate(all_file_list):
+            multiprocess_job.add_security_job(f"{self.SOURCE_FILE}_ID-{idx}_{os.path.basename(file_path)}",
+                                              self._parse_file_without_filter, file_path)
+        results, _ = multiprocess_job.join_and_get_results()
+        kg_logger.info("%s files parse job is complete.", self.SOURCE_FILE)
+        return list(chain(*results.values())), {}, {}
+
+    def _get_all_log_files(self, file_paths: List[str]) -> List[str]:
+        """
+        Get all log files without time filtering.
+        """
+        all_files = []
+        for path in file_paths:
+            if path.endswith('.log.zip'):
+                unzipped_path = self.unzip_file(path)
+                if unzipped_path:
+                    all_files.append(unzipped_path)
+            elif path.endswith('.log'):
+                all_files.append(path)
+        return all_files
+
+    def _parse_file_without_filter(self, file_path: str):
+        """
+        Parse file without time filtering.
+        """
+        event_storage = EventStorage()
+        for line in self._yield_log(file_path):
+            event_dict = self.parse_single_line(line)
+            if not event_dict:
+                continue
+            occur_time = self._parse_log_time(line)
+            if not occur_time:
+                occur_time = ""
+            self.supplement_common_info(event_dict, file_path, occur_time)
+            event_storage.record_event(event_dict)
+        return event_storage.generate_event_list()
+
+    def filter_events(self, events_list: list, collect_result: dict):
+        """
+        Filter events by start_time and end_time from params.
+        """
+        self.start_time = self.params.get("start_time")
+        self.end_time = self.params.get("end_time")
+        if not self.start_time and not self.end_time:
+            return events_list
+        filtered_list = []
+        for event in events_list:
+            occur_time = event.get("occur_time", "")
+            if not occur_time:
+                filtered_list.append(event)
+                continue
+            if self.start_time and occur_time < self.start_time:
+                continue
+            if self.end_time and occur_time > self.end_time:
+                continue
+            filtered_list.append(event)
+        return filtered_list
 
     def filter_files_in_range(self, file_paths: List[str]) -> List[str]:
         """
