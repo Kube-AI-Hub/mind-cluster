@@ -1629,3 +1629,68 @@ func TestFilterSoftShareDevices(t *testing.T) {
 		})
 	}
 }
+
+// TestQueryNetworkStatusWithoutRoCEDev tests the network error code in device without RoCE
+func TestQueryNetworkStatusWithoutRoCEDev(t *testing.T) {
+	convey.Convey("Test queryNetworkStatusWithoutFaultCode function", t, func() {
+		// Test case 1: faultCodes is not empty
+		convey.Convey("When faultCodes is not empty, should return directly", func() {
+			faultCodes := []int64{123, 456}
+			device := &common.NpuDevice{DeviceID: 0}
+			result := queryNetworkStatusWithoutFaultCode(faultCodes, device)
+			convey.So(result, convey.ShouldResemble, faultCodes)
+		})
+
+		// Test case 2: common.WithoutRoCEDev() returns true
+		convey.Convey("When WithoutRoCEDev returns true, should return directly", func() {
+			faultCodes := []int64{}
+			device := &common.NpuDevice{DeviceID: 0}
+			patch := gomonkey.ApplyFunc(common.WithoutRoCEDev, func() bool { return true })
+			defer patch.Reset()
+			result := queryNetworkStatusWithoutFaultCode(faultCodes, device)
+			convey.So(result, convey.ShouldBeEmpty)
+		})
+
+		// Test case 3: WithoutRoCEDev returns false and link status is normal
+		convey.Convey("When WithoutRoCEDev false and link status normal", func() {
+			faultCodes := []int64{}
+			device := &common.NpuDevice{DeviceID: 0}
+			patchWithoutRoCE := gomonkey.ApplyFunc(common.WithoutRoCEDev, func() bool { return false })
+			defer patchWithoutRoCE.Reset()
+			patchLink := gomonkey.ApplyFunc(hccn.GetNPULinkStatus, func(int32) (string, error) {
+				return npuCommon.NPUNetworkLinkUpStatus, nil
+			})
+			defer patchLink.Reset()
+			result := queryNetworkStatusWithoutFaultCode(faultCodes, device)
+			convey.So(result, convey.ShouldBeEmpty)
+		})
+
+		// Test case 4: WithoutRoCEDev returns false and link status is abnormal
+		convey.Convey("When WithoutRoCEDev false and link status abnormal", func() {
+			faultCodes := []int64{}
+			device := &common.NpuDevice{DeviceID: 0}
+			patchWithoutRoCE := gomonkey.ApplyFunc(common.WithoutRoCEDev, func() bool { return false })
+			defer patchWithoutRoCE.Reset()
+			patchLink := gomonkey.ApplyFunc(hccn.GetNPULinkStatus, func(int32) (string, error) {
+				return npuCommon.NPUNetworkLinkDownStatus, nil
+			})
+			defer patchLink.Reset()
+			result := queryNetworkStatusWithoutFaultCode(faultCodes, device)
+			convey.So(result, convey.ShouldNotContain, common.LinkDownFaultCode)
+		})
+
+		// Test case 5: WithoutRoCEDev returns false and GetNPULinkStatus returns error
+		convey.Convey("When WithoutRoCEDev false and GetNPULinkStatus error", func() {
+			faultCodes := []int64{}
+			device := &common.NpuDevice{DeviceID: 0}
+			patchWithoutRoCE := gomonkey.ApplyFunc(common.WithoutRoCEDev, func() bool { return false })
+			defer patchWithoutRoCE.Reset()
+			patchLink := gomonkey.ApplyFunc(hccn.GetNPULinkStatus, func(int32) (string, error) {
+				return "", errors.New("link error")
+			})
+			defer patchLink.Reset()
+			result := queryNetworkStatusWithoutFaultCode(faultCodes, device)
+			convey.So(result, convey.ShouldNotContain, common.LinkDownFaultCode)
+		})
+	})
+}

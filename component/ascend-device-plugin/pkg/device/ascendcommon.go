@@ -1784,7 +1784,7 @@ func (tool *AscendTools) generateNetworkFaultEventsBasedOnFaultCacheChange(devic
 
 func queryNetworkStatusWithoutFaultCode(faultCodes []int64, device *common.NpuDevice) []int64 {
 	newFaultCodes := faultCodes
-	if len(faultCodes) != 0 {
+	if len(faultCodes) != 0 || common.WithoutRoCEDev() {
 		return newFaultCodes
 	}
 	linkStatus := getNetworkStatusCache(device.DeviceID)
