@@ -107,7 +107,7 @@ MindCluster Ascend FaultDiag支持的Python版本需≥3.7。在安装MindCluste
 ```shell
 git clone https://gitcode.com/Ascend/mind-cluster.git
 cd mind-cluster/component/ascend-faultdiag
-./build/build.sh
+bash build/build.sh
 ```
 
 ## [获取软件包](https://www.hiascend.com/zh/developer/download/community/result?module=dl%2Bcann)
