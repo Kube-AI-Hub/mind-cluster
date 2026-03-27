@@ -1216,12 +1216,11 @@ func (hnm *HwAscend910Manager) handleSucceedRestartRequest(taskName, currentPoli
 func (hnm *HwAscend910Manager) checkDevErrorCode(taskName string, devFaultInfo []*common.TaskDevInfo,
 	classifyDevs map[string][]*common.NpuDevice) (string,
 	bool, error) {
-	timer := time.NewTimer(common.WaitErrorCodeCleanTime * time.Second)
-	defer timer.Stop()
+	timeOut := time.After(common.WaitErrorCodeCleanTime * time.Second)
 	timeCost := 0
 	for {
 		select {
-		case <-timer.C:
+		case <-timeOut:
 			return "", true, fmt.Errorf("after %d second, there still has error code on device",
 				common.WaitErrorCodeCleanTime)
 		default:
@@ -1486,12 +1485,11 @@ func (hnm *HwAscend910Manager) waitForAllFaultyDeviceProcessesToZero(taskName st
 	}
 	hwlog.RunLog.Infof("start check the number of remaining processes on the faulty chips in the task named %v,"+
 		"logic id list: %v", taskName, faultDeviceLogicIdMap)
-	timer := time.NewTimer(common.WaitProcessesToZeroTime * time.Second)
-	defer timer.Stop()
+	timeoutChan := time.After(common.WaitProcessesToZeroTime * time.Second)
 	timeCount := 0
 	for {
 		select {
-		case _, ok := <-timer.C:
+		case _, ok := <-timeoutChan:
 			if !ok {
 				return fmt.Errorf("after %d second, there is still remaining processes on the faulty chips",
 					int(common.WaitProcessesToZeroTime))

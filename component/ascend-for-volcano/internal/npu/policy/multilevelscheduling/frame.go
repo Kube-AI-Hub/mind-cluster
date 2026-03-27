@@ -422,10 +422,6 @@ func (mh *MultilevelHandler) obtainBatchScoreRank(taskInfo *api.TaskInfo, job *p
 
 func (mh *MultilevelHandler) scoreNodeForReadyJob(task *api.TaskInfo, job plugin.SchedulerJob,
 	sMap map[string]float64) {
-	if sMap == nil {
-		klog.V(util.LogWarningLev).Infof("%s scoreNodeForReadyJob %s: sMap is nil.", mh.GetPluginName(), task.Name)
-		return
-	}
 	rank, err := getHcclRankIndex(task, job)
 	if err != nil {
 		klog.V(util.LogErrorLev).Infof("getHcclRankIndex %s failed: %v", task.Name, err)
@@ -497,10 +493,6 @@ func getL1Ranks(logicL1Nodes map[string][]plugin.SuperNode, rank int) (string, i
 
 func updateSuperNodesForPodLevelRescheduling(currentSelectedNodes map[string][]plugin.SuperNode,
 	task *api.TaskInfo, job plugin.SchedulerJob) {
-	if currentSelectedNodes == nil {
-		klog.V(util.LogWarningLev).Infof("updateSuperNodesForPodLevelRescheduling: currentSelectedNodes is nil.")
-		return
-	}
 	fJob, exist := getFaultJob(task.Job)
 	if !exist || !ifPodLevelRescheduling(fJob, &job) {
 		return

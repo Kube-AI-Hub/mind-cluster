@@ -85,9 +85,8 @@ class HccsParser:
         }
         proxy_timeout_statistics = TableParser.parse(cmd_res, titles_dict, {}, 1)
         proxy_timeout_statistics = [ProxyTimeoutStatis.from_dict(item) for item in proxy_timeout_statistics]
-        error_records = [item
-                         for item in proxy_timeout_statistics
-                         if item.is_rx_timeout_happened() or item.is_rp_tx_timeout_happened()]
+        error_records = [item for item in proxy_timeout_statistics if
+                         item.is_rx_timeout_happend() or item.is_rp_tx_timeout_happend()]
         return error_records
 
     @classmethod

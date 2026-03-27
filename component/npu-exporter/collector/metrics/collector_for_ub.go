@@ -240,18 +240,13 @@ func promUpdateUbInfo(ch chan<- prometheus.Metric, cache ubCache,
 		return
 	}
 	for i := 0; i < (common.MaxDieID * common.MaxPortID); i++ {
-		if ubInfo[i].UBCommonStats != nil {
-			// rx
-			promUpdateUbRx(ch, timestamp, ubInfo, cardLabel, i)
-			// tx
-			promUpdateUbTx(ch, timestamp, ubInfo, cardLabel, i)
-			// sum
-			promUpdateUbSum(ch, timestamp, ubInfo, cardLabel, i)
-		}
-		if ubInfo[i].UboeExtensions != nil {
-			// uboe
-			promUpdateUbUboe(ch, timestamp, ubInfo, cardLabel, i)
-		}
+		promUpdateUbRx(ch, timestamp, ubInfo, cardLabel, i)
+		// tx
+		promUpdateUbTx(ch, timestamp, ubInfo, cardLabel, i)
+		// sum
+		promUpdateUbSum(ch, timestamp, ubInfo, cardLabel, i)
+		//uboe
+		promUpdateUbUboe(ch, timestamp, ubInfo, cardLabel, i)
 	}
 }
 
@@ -340,18 +335,14 @@ func telegrafUpdateUbInfo(cache ubCache, fieldMap map[string]interface{}) {
 		return
 	}
 	for i := 0; i < (common.MaxDieID * common.MaxPortID); i++ {
-		if ubInfo[i].UBCommonStats != nil {
-			// rx
-			telegrafUpdateUbRx(fieldMap, ubInfo, i)
-			// tx
-			telegrafUpdateUbTx(fieldMap, ubInfo, i)
-			// sum
-			telegrafUpdateUbSum(fieldMap, ubInfo, i)
-		}
-		if ubInfo[i].UboeExtensions != nil {
-			// uboe
-			telegrafUpdateUbUboe(fieldMap, ubInfo, i)
-		}
+		// rx
+		telegrafUpdateUbRx(fieldMap, ubInfo, i)
+		// tx
+		telegrafUpdateUbTx(fieldMap, ubInfo, i)
+		// sum
+		telegrafUpdateUbSum(fieldMap, ubInfo, i)
+		//uboe
+		telegrafUpdateUbUboe(fieldMap, ubInfo, i)
 	}
 }
 
@@ -535,8 +526,6 @@ func getUBStatInfo(logicID int32, dieID, portID int) *common.UBInfo {
 		convertUBCommonStats(&ubInfos, ubInfo)
 		hwlog.ResetErrCnt(fmt.Sprint(colcommon.DomainForUb, dieID, portID), logicID)
 	} else {
-		ubInfos.UBCommonStats = nil
-		ubInfos.UboeExtensions = nil
 		logWarnMetricsWithLimit(fmt.Sprint(colcommon.DomainForUb, dieID, portID), logicID, dieID, portID, err)
 	}
 	return &ubInfos
