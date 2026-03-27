@@ -2,7 +2,7 @@
 
 **接口原型<a name="zh-cn_topic_0000001511259053_section15931137194112"></a>**
 
-```
+```shell
 ascend-fd version
 ```
 
@@ -14,6 +14,6 @@ ascend-fd version
 
 版本号信息。
 
-```
+```ColdFusion
 ascend-fd 组件版本号
 ```

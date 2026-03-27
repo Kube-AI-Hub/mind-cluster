@@ -85,36 +85,37 @@
 2. 将[获取软件包](#获取软件包)获取到的软件包上传到环境的任意目录下（如“\~/software”）。
 3. 在软件包所在目录执行如下命令解压。
 
-    ```
+    ```shell
     unzip Ascend-mindxdl-faultdiag_{version}_linux-{arch}.zip
     ```
 
 4. 执行如下命令进行安装。
 
-    ```
+    ```shell
     pip3 install ascend_faultdiag-{version}-py3-none-linux_{arch}.whl --log ~/.ascend_faultdiag/install.log          
     ```
 
 5. 修改目录权限。
 
-    ```
+    ```shell
     chmod 700 ~/.ascend_faultdiag
     chmod 600 ~/.ascend_faultdiag/*.log
     ```
 
 6. 执行以下命令验证软件是否安装成功。
 
-    ```
+    ```shell
     ascend-fd version
     ```
 
     回显示例如下：
 
-    ```
+    ```ColdFusion
     ascend-fd ${版本号}
     ```
 
 >[!NOTE]
+>
 >- MindCluster Ascend FaultDiag的运行日志文件默认路径为“$\(HOME\)/.ascend\_faultdiag/RUN\_LOG/”目录下。每次执行ascend-fd parse或diag命令，会生成一个时间戳+随机数的文件夹，文件夹内部按PID分别落盘运行日志。RUN\_LOG目录下的文件夹数量若超过100个，将会按照时间先后删除20个文件夹；如果文件夹数量未超过100个，但是文件总内存大小超过100M，也会按时间先后删除旧日志并保留最大80M的文件。
 >- MindCluster Ascend FaultDiag的操作日志文件默认路径为“$\{HOME\}/.ascend\_faultdiag/ascend\_faultdiag\_operation.log”。
 >- 日志文件大小不超过10M，超过限制大小后将自动转储另一个日志文件，同PID日志文件数量不超过10个，超过限制个数时将自动覆盖最早创建的日志。
@@ -127,17 +128,17 @@ MindCluster Ascend Deployer支持5.0.0.2及以上版本的MindCluster Ascend Fau
 
 **单机安装MindCluster Ascend FaultDiag<a name="section16724191613286"></a>**
 
-单台设备安装MindCluster Ascend FaultDiag组件，请参见《MindCluster Ascend Deployer 用户指南》中的“<a href="https://gitcode.com/Ascend/ascend-deployer/blob/dev/docs/zh/installation_guide.md#%E5%AE%89%E8%A3%85%E6%98%87%E8%85%BE%E8%BD%AF%E4%BB%B6">安装昇腾软件</a>”章节。
+单台设备安装MindCluster Ascend FaultDiag组件，请参见《MindCluster Ascend Deployer 用户指南》中的“[安装昇腾软件](https://gitcode.com/Ascend/ascend-deployer/blob/dev/docs/zh/installation_guide.md#%E5%AE%89%E8%A3%85%E6%98%87%E8%85%BE%E8%BD%AF%E4%BB%B6)”章节。
 
 安装命令如下：
 
-```
+```shell
 bash install.sh --install=fault-diag                                            //安装故障诊断组件
 ```
 
 **批量安装MindCluster Ascend FaultDiag<a name="section207590522915"></a>**
 
-批量安装MindCluster Ascend FaultDiag组件，请参见《MindCluster Ascend Deployer 用户指南》中的“<a href="https://gitcode.com/Ascend/ascend-deployer/blob/dev/docs/zh/installation_guide.md#%E5%AE%89%E8%A3%85%E6%98%87%E8%85%BE%E8%BD%AF%E4%BB%B6">安装昇腾软件</a>”章节。
+批量安装MindCluster Ascend FaultDiag组件，请参见《MindCluster Ascend Deployer 用户指南》中的“[安装昇腾软件](https://gitcode.com/Ascend/ascend-deployer/blob/dev/docs/zh/installation_guide.md#%E5%AE%89%E8%A3%85%E6%98%87%E8%85%BE%E8%BD%AF%E4%BB%B6)”章节。
 
 详细安装流程如[图1](#fig56301358747)所示：
 
@@ -153,13 +154,13 @@ bash install.sh --install=fault-diag                                            
 3. 参考[命令行方式安装](#命令行方式安装)，完成软件包的安装。
 4. 执行以下命令验证软件是否升级安装成功。
 
-    ```
+    ```shell
     ascend-fd version
     ```
 
     回显示例如下：
 
-    ```
+    ```ColdFusion
     ascend-fd ${版本号}
     ```
 
@@ -167,13 +168,13 @@ bash install.sh --install=fault-diag                                            
 
 使用命令行方式安装后进行工具的卸载，以组件安装的用户执行以下命令。
 
-```
+```shell
 pip3 uninstall ascend-faultdiag -y --log ~/.ascend_faultdiag/uninstall.log
 ```
 
 使用MindCluster Ascend Deployer方式安装后进行工具的卸载，以组件的安装用户执行删除二进制文件命令。
 
-```
+```shell
 rm /usr/local/bin/ascend-fd
 ```
 
