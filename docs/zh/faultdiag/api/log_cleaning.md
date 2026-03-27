@@ -2,47 +2,47 @@
 
 **接口原型<a name="zh-cn_topic_0000001461778658_section876116162918"></a>**
 
--   集成所有日志进行清洗。
+- 集成所有日志进行清洗。
 
-    ```
+    ```shell
     ascend-fd parse -i 采集目录 -o 清洗输出目录 
     ```
 
--   分类输入日志目录进行清洗。
+- 分类输入日志目录进行清洗。
 
-    ```
-    ascend-fd parse --host_log 主机侧操作系统日志采集目录 --device_log Device侧日志采集目录 --train_log 用户训练及推理日志采集目录 --process_log CANN应用类日志采集目录 --env_check NPU网口、状态信息、资源信息采集目录 --dl_log MindCluster组件日志采集目录 --mindie_log MindIE组件日志采集目录 --amct_log AMCT组件日志采集目录 --custom_log 自定义解析文件目录名 -o 清洗输出目录 
+    ```shell
+    ascend-fd parse --host_log 主机侧操作系统日志采集目录 --device_log Device侧日志采集目录 --train_log 用户训练及推理日志采集目录 --process_log CANN应用类日志采集目录 --env_check NPU网口、状态信息、资源信息采集目录 --dl_log MindCluster组件日志采集目录 --mindie_log MindIE组件日志采集目录 --amct_log AMCT组件日志采集目录 --bus_log A5 LCNE组件日志目录 --custom_log 自定义解析文件目录名 -o 清洗输出目录 
     ```
 
--   （可选）若有BMC侧日志，执行如下。
+- （可选）若有BMC侧日志，执行如下。
 
-    ```
+    ```shell
     ascend-fd parse --bmc_log BMC侧日志目录 -o 清洗结果保存目录
     ```
 
     如：
 
-    ```
+    ```shell
     ascend-fd parse --bmc_log  "bmc/worker-00" -o "auto_diag_combine/bmc/worker-00"
     ```
 
--   （可选）若有LCNE侧日志，执行如下。
+- （可选）若有LCNE侧日志，执行如下。
 
-    ```
+    ```shell
     ascend-fd parse --lcne_log LCNE侧日志目录 -o 清洗结果保存目录
     ```
 
     如：
 
-    ```
+    ```shell
     ascend-fd parse --lcne_log  "lcne/worker-111" -o "auto_diag_combine/lcne/worker-111"
     ```
 
 >[!NOTE]
->-   同时共用-i与详细日志采集目录参数时，会优先读取详细日志采集目录参数的输入值，再根据-i参数读取剩余日志采集目录。
->-   若-i参数与8个详细日志采集目录参数同时配置时，-i参数不生效。
->-   至少需要指定--input\_path、--host\_log、--device\_log、--train\_log、--process\_log、--env\_check、--dl\_log、--mindie\_log、--amct\_log、--custom\_log其中一个参数，否则清洗命令会执行失败。
->-   清洗命令指定的输出目录磁盘空间需大于5G，空间不足可能导致部分清洗结果丢失，进而导致诊断结果异常或不准确。
+>
+>- 同时共用-i与详细日志采集目录参数时，会优先读取详细日志采集目录参数的输入值，再根据-i参数读取剩余日志采集目录。
+>- 至少需要指定--input\_path、--host\_log、--device\_log、--train\_log、--process\_log、--env\_check、--dl\_log、--mindie\_log、--amct\_log、--custom\_log、--bus\_log其中一个参数，否则清洗命令会执行失败。
+>- 清洗命令指定的输出目录磁盘空间需大于5G，空间不足可能导致部分清洗结果丢失，进而导致诊断结果异常或不准确。
 
 **功能说明<a name="zh-cn_topic_0000001461778658_section10145143713297"></a>**
 
@@ -71,16 +71,12 @@
 |--performance|-p|否|Bool|指定该参数时将执行所有清洗模块。不指定则只执行根因节点与故障事件两个模块的日志清洗功能。|
 |--help|-h|否|-|查询二级命令与参数含义以及使用说明。|
 
-
 **返回说明<a name="zh-cn_topic_0000001461778658_section2134184616351"></a>**
 
 日志清洗任务执行状态。
 
-```
+```ColdFusion
 The parse job starts. Please wait. Job id: [****], run log file is [****].
 These job ['模块1', '模块2'...] succeeded.
 The parse job is complete.
 ```
-
-
-

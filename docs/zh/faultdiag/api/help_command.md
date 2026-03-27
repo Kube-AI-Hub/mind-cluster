@@ -2,13 +2,13 @@
 
 **接口原型<a name="zh-cn_topic_0000001511259053_section15931137194112"></a>**
 
-```
+```shell
 ascend-fd -h
 ```
 
 或
 
-```
+```shell
 ascend-fd --help
 ```
 
@@ -24,12 +24,11 @@ ascend-fd --help
 |--|--|--|--|--|
 |--help|-h|否|-|查询二级命令与参数含义以及使用说明。|
 
-
 **返回说明<a name="zh-cn_topic_0000001511259053_section1072365114014"></a>**
 
 返回参数与使用说明。
 
-```
+```ColdFusion
 usage: ascend-fd [-h] {version,parse,diag,blacklist,entity,single-diag} ...
 Ascend Fault Diag
 positional arguments:
@@ -44,5 +43,3 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
 ```
-
-
