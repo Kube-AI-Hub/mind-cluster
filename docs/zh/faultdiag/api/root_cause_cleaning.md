@@ -2,7 +2,7 @@
 
 **接口原型<a name="section1652101232010"></a>**
 
-```
+```shell
 parse_root_cluster(input_log_list: list)
 ```
 
@@ -16,11 +16,9 @@ parse_root_cluster(input_log_list: list)
 |--|--|--|--|
 |*input_log_list*|是|List|用户输入的节点信息。|
 
-
 **返回参数说明<a name="section14225151742812"></a>**
 
 |参数名|参数类型|说明|
 |--|--|--|
 |results|List|清洗整合的结果。|
 |err_msg_list|List|接口执行过程中产生的错误信息。|
-

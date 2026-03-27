@@ -2,7 +2,7 @@
 
 **接口原型<a name="section1652101232010"></a>**
 
-```
+```shell
 diag_knowledge_graph(input_log_list: list)
 ```
 
@@ -14,8 +14,7 @@ diag_knowledge_graph(input_log_list: list)
 
 |参数名|是否必选|参数类型|说明|
 |--|--|--|--|
-|*input_log_list*|是|List|使用<a href="./fault_event_cleaning.md">故障事件清洗接口</a>获得的各个节点results结果数据。<p>注：若节点参数中出现"source": "ccae"时，可能导致该节点清洗结果不准确。</p>|
-
+|*input_log_list*|是|List|使用[故障事件清洗接口](./fault_event_cleaning.md)获得的各个节点results结果数据。<p>注：若节点参数中出现"source": "ccae"时，可能导致该节点清洗结果不准确。</p>|
 
 **返回参数说明<a name="section14225151742812"></a>**
 
@@ -23,6 +22,3 @@ diag_knowledge_graph(input_log_list: list)
 |--|--|--|
 |results|List|整合后的故障事件诊断报告。|
 |err_msg_list|List|接口执行过程中产生的错误信息。|
-
-
-

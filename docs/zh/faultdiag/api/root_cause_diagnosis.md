@@ -2,7 +2,7 @@
 
 **接口原型<a name="section1652101232010"></a>**
 
-```
+```shell
 diag_root_cluster(input_log_list: list)
 ```
 
@@ -14,8 +14,7 @@ diag_root_cluster(input_log_list: list)
 
 |参数名|是否必选|参数类型|说明|
 |--|--|--|--|
-|*input_log_list*|是|List|使用<a href="./root_cause_cleaning.md">根因节点清洗接口</a>获得的results结果数据。|
-
+|*input_log_list*|是|List|使用[根因节点清洗接口](./root_cause_cleaning.md)获得的results结果数据。|
 
 **返回参数说明<a name="section14225151742812"></a>**
 
@@ -23,4 +22,3 @@ diag_root_cluster(input_log_list: list)
 |--|--|--|
 |results|Dictionary|发生错误的根因节点信息。|
 |err_msg_list|List|接口执行过程中产生的错误信息。|
-

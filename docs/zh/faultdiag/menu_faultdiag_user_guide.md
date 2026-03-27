@@ -21,4 +21,5 @@
 - [常用操作](common_operations.md)
 - [安全加固](security_hardening.md)
 - [FAQ](faq.md)
+- [链路诊断工具](./ascend-faultdiag-toolkit/ascend-faultdiag-toolkit.md)
 - [附录](appendix.md)

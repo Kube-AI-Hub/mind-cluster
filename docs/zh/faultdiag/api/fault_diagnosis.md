@@ -2,7 +2,7 @@
 
 **接口原型<a name="zh-cn_topic_0000001511538701_section124882040143613"></a>**
 
-```
+```shell
 ascend-fd diag -i 诊断输入目录 -o 诊断结果输出目录 
 ```
 
@@ -22,16 +22,12 @@ ascend-fd diag -i 诊断输入目录 -o 诊断结果输出目录
 |--help|-h|否|-|查询二级命令与参数含义以及使用说明。|
 |--scene|-s|否|String|诊断场景，默认host。可选host或super_pod。<ul><li>host：单独诊断主机Host日志场景。</li><li>super_pod：诊断超节点日志，包括Host、BMC、LCNE目录结构的日志场景。</li></ul>|
 
-
 **返回说明<a name="zh-cn_topic_0000001511538701_section1714345618323"></a>**
 
 故障诊断任务执行状态。
 
-```
+```ColdFusion
 The diag job starts. Please wait. Job id: [****], run log file is [****].
 诊断内容
 The diag job is complete.
 ```
-
-
-

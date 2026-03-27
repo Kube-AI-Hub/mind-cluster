@@ -2,7 +2,7 @@
 
 **接口原型<a name="zh-cn_topic_0000001511538701_section124882040143613"></a>**
 
-```
+```shell
 ascend-fd blacklist 子命令
 ```
 
@@ -11,8 +11,9 @@ ascend-fd blacklist 子命令
 新增含有故障关键词的屏蔽规则，实现在日志清洗时不将含有故障关键词的信息记录到日志清洗后的文件中。
 
 >[!NOTE]
->-   当前仅支持对CANN应用类日志的ERROR日志进行屏蔽操作。
->-   若用户需要自定义屏蔽故障关键词文件的保存路径，可以参考[自定义MindCluster Ascend FaultDiag家目录](../common_operations.md#自定义mindcluster-ascend-faultdiag家目录)章节进行操作。
+>
+>- 当前仅支持对CANN应用类日志的ERROR日志进行屏蔽操作。
+>- 若用户需要自定义屏蔽故障关键词文件的保存路径，可以参考[自定义MindCluster Ascend FaultDiag家目录](../common_operations.md#自定义mindcluster-ascend-faultdiag家目录)章节进行操作。
 
 **参数说明<a name="zh-cn_topic_0000001511538701_section122149111390"></a>**
 
@@ -27,14 +28,12 @@ ascend-fd blacklist 子命令
 |--force|无|可选|Bool|指定该参数删除屏蔽规则或替换文件时，界面将不会出现确认提示信息。<p>必须与--delete或--file一起使用。</p>|
 |--help|-h|可选|-|查询使用说明。|
 
-
 **返回说明<a name="zh-cn_topic_0000001511538701_section1714345618323"></a>**
 
 例如返回当前已有的屏蔽规则。
 
-```
+```ColdFusion
 [BLACKLIST]
 0. ERROR2, ERROR3, ERROR3
 1. ERR1, ERR2, ERR3, ERR4
 ```
-
