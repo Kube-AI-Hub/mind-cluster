@@ -644,7 +644,7 @@ func TestHandleNewPodDeleted1(t *testing.T) {
 		convey.So(true, convey.ShouldBeTrue)
 	})
 
-	convey.Convey("03-update old pod failed should log error and return", t, func() {
+	convey.Convey("03-patch old pod failed should log error and return", t, func() {
 		r := newCommonReconciler()
 		pod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -661,7 +661,7 @@ func TestHandleNewPodDeleted1(t *testing.T) {
 				api.BackupNewPodNameKey: "test-pod",
 			})
 			return nil
-		}).ApplyMethodReturn(r.Client, "Update", errors.New("update pod failed"))
+		}).ApplyMethodReturn(r.Client, "Patch", errors.New("patch pod failed"))
 
 		handleNewPodDeleted(pod, r)
 		convey.So(true, convey.ShouldBeTrue)
@@ -689,7 +689,7 @@ func TestHandleNewPodDeleted2(t *testing.T) {
 				api.BackupNewPodNameKey: "test-pod",
 			})
 			return nil
-		}).ApplyMethodReturn(r.Client, "Update", nil)
+		}).ApplyMethodReturn(r.Client, "Patch", nil)
 
 		handleNewPodDeleted(pod, r)
 		convey.So(true, convey.ShouldBeTrue)
