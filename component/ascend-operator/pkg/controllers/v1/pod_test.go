@@ -1090,7 +1090,7 @@ func buildTestHotSwitchCases() []testHotSwitchCase {
 			name: "06-create hot switch pod success",
 			setupMocks: func(p *gomonkey.Patches, r *ASJobReconciler) {
 				mockCreateNewPodReturnNil(p, r)
-				mockGetReturnNil(p, r).ApplyMethodReturn(r.Client, "Update", nil)
+				mockGetReturnNil(p, r).ApplyMethodReturn(r.Client, "Patch", nil)
 			},
 			wantErr: false,
 		},
