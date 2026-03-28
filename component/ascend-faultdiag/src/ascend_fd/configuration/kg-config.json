@@ -17823,7 +17823,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["linkDown_active:", "The interface status changes"]
+                "in": ["linkDown_active", "The interface status changes"]
             }
         },
         "Net_Param_Dev_Switch_16": {
@@ -17844,7 +17844,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwPortFail_active:", "The port failed partially"]
+                "in": ["hwPortFail_active", "The port failed partially"]
             }
         },
         "Net_Param_Dev_Switch_17": {
@@ -17865,7 +17865,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["The LBNP FSM moves from a higher numbered state to a lower numbered state"]
+                "in": ["hwLbnpPeerStateTransition_active", "The LBNP FSM moves from a higher numbered state to a lower numbered state"]
             }
         },
         "Net_Param_Dev_Switch_19": {
@@ -17928,7 +17928,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwLogRecordFailAlarm_active:", "Failed to write log data into the file"]
+                "in": ["hwLogRecordFailAlarm_active", "Failed to write log data into the file"]
             }
         },
         "Net_Param_Dev_Switch_24": {
@@ -17991,7 +17991,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwSystemRollback_active:", "System rollback"]
+                "in": ["hwSystemRollback_active", "System rollback"]
             }
         },
         "Net_Param_Dev_Switch_27": {
@@ -18033,7 +18033,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwPatchInstallFail_active:", "Patch operation failed"]
+                "in": ["hwPatchInstallFail_active", "Patch operation failed"]
             }
         },
         "Net_Param_Dev_david_Chip_01": {
@@ -18054,7 +18054,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwForwardEngineInvalid_active:", "The forwarding engine completely failed"]
+                "in": ["hwForwardEngineInvalid_active", "The forwarding engine completely failed"]
             }
         },
         "Net_Param_Dev_5808_Chip_02": {
@@ -18075,7 +18075,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwForwardEnginePortFail_active:", "The forwarding engine port function failed"]
+                "in": ["hwForwardEnginePortFail_active", "The forwarding engine port function failed"]
             }
         },
         "Net_Param_Dev_5808_Chip_05": {
@@ -18096,7 +18096,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwForwardEngineFail_active:", "The forwarding engine partially failed"]
+                "in": ["hwForwardEngineFail_active", "The forwarding engine partially failed"]
             }
         },
         "Net_Param_Dev_5808_Chip_08": {
@@ -18117,7 +18117,7 @@
             },
             "source_file": "LCNE_LOG",
             "regex": {
-                "in": ["hwForwardEngineModelFail_active:", "The forwarding engine module failed"]
+                "in": ["hwForwardEngineModelFail_active", "The forwarding engine module failed"]
             }
         },
         "AISW_MindX_Device_Plugin_01": {
