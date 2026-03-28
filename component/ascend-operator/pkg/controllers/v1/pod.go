@@ -42,6 +42,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
@@ -197,7 +198,7 @@ func (r *ASJobReconciler) genRankTable(ji *jobInfo) {
 	if int(ji.totalReplicas) == 0 || len(allocatedPods) != int(ji.totalReplicas) {
 		return
 	}
-	
+
 	r.updateRandIndex(allocatedPods)
 	r.setOnePodOneNode(allocatedPods)
 	if acjob, ok := ji.job.(*mindxdlv1.AscendJob); ok {
@@ -205,7 +206,7 @@ func (r *ASJobReconciler) genRankTable(ji *jobInfo) {
 	} else {
 		hwlog.RunLog.Debugf("job %s is not AscendJob, skip set sp block num", ji.name)
 	}
-	
+
 	if err := r.cachePods(rtg, allocatedPods); err != nil {
 		hwlog.RunLog.Errorf("%v", err)
 		return
@@ -425,16 +426,17 @@ func (r *ASJobReconciler) createHotSwitchPod(oldPod *corev1.Pod, pi *podInfo,
 		return err
 	}
 
-	// update old pod annotations
+	original := oldPod.DeepCopy()
 	delete(oldPod.Annotations, api.NeedOperatorOpeKey)
 	oldPod.Annotations[api.BackupNewPodNameKey] = newPodName
 
-	err = r.Update(context.TODO(), oldPod)
+	patch := client.MergeFrom(original)
+	err = r.Patch(context.TODO(), oldPod, patch)
 	if err != nil {
-		hwlog.RunLog.Errorf("update hotswitch old pod %s/%s annotations failed,err:%v", oldPod.Namespace, oldPod.Name, err)
+		hwlog.RunLog.Errorf("patch hotswitch old pod %s/%s annotations failed, err: %v", oldPod.Namespace, oldPod.Name, err)
 		return err
 	}
-	hwlog.RunLog.Infof("update hotswitch old pod %s/%s annotations success", oldPod.Namespace, oldPod.Name)
+	hwlog.RunLog.Infof("patch hotswitch old pod %s/%s annotations success", oldPod.Namespace, oldPod.Name)
 	return nil
 }
 

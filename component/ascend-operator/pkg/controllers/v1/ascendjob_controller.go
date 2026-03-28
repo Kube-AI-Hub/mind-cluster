@@ -478,10 +478,11 @@ func handleOldPodDeleted(pod *v1.Pod, r *ASJobReconciler) {
 		hwlog.RunLog.Errorf("hotswitch: could not find newPod: %s", newPod.Name)
 		return
 	}
-
+	original := newPod.DeepCopy()
 	delete(newPod.Annotations, api.PodTypeKey)
 	delete(newPod.Annotations, api.BackupSourcePodNameKey)
-	err := r.Update(ctx, newPod)
+	patch := client.MergeFrom(original)
+	err := r.Patch(context.TODO(), newPod, patch)
 	if err != nil {
 		hwlog.RunLog.Errorf("hotswitch: delete annotations[podType、backupSourcePodName] failed, pod: %s/%s,err:%v",
 			newPod.Namespace, newPod.Name, err)
@@ -515,10 +516,11 @@ func handleNewPodDeleted(pod *v1.Pod, r *ASJobReconciler) {
 		hwlog.RunLog.Errorf("hotswitch: get old pod err: %s", oldPodName)
 		return
 	}
-
+	original := oldPod.DeepCopy()
 	delete(oldPod.Annotations, api.InHotSwitchFlowKey)
 	delete(oldPod.Annotations, api.BackupNewPodNameKey)
-	err := r.Update(ctx, oldPod)
+	patch := client.MergeFrom(original)
+	err := r.Patch(context.TODO(), oldPod, patch)
 	if err != nil {
 		hwlog.RunLog.Errorf("hotswitch: delete annotations[inHotSwitchFlow、backupNewPodName] failed, pod: %s/%s,err:%v",
 			oldPod.Namespace, oldPod.Name, err)
