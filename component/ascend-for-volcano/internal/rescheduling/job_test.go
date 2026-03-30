@@ -1047,3 +1047,328 @@ func TestIsMasterFaultWithSuperPodJob(t *testing.T) {
 	}
 
 }
+
+type deletePodInfoCase struct {
+	name         string
+	fJob         *FaultJob
+	schedulerJob *plugin.SchedulerJob
+	env          plugin.ScheduleEnv
+	wantErr      bool
+	wantSuperPod bool
+	wantIdsLen   int
+}
+
+func buildDeletePodInfoCases() []deletePodInfoCase {
+	return []deletePodInfoCase{
+		{
+			name: "01-normal job",
+			fJob: &FaultJob{JobUID: mockJobUID},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{},
+				},
+			},
+			wantErr:      false,
+			wantSuperPod: false,
+		},
+		{
+			name: "02-super pod job",
+			fJob: &FaultJob{
+				JobUID:     mockJobUID,
+				FaultTasks: []FaultTask{{IsFaultTask: true, NodeName: "node0"}},
+				SuperPods:  map[string][]plugin.SuperNode{"0": {{Name: "node0"}}},
+			},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{util.SuperPodAnnoKey: "16"}},
+					NPUJob: &util.NPUJob{},
+				},
+			},
+			wantErr:      false,
+			wantSuperPod: true,
+			wantIdsLen:   1,
+		},
+		{
+			name: "03-multi level job empty super pods",
+			fJob: &FaultJob{JobUID: mockJobUID, SuperPods: map[string][]plugin.SuperNode{}},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{util.SchedulePolicyAnnoKey: util.MultiLevel}},
+					NPUJob: &util.NPUJob{},
+				},
+			},
+			wantErr: true,
+		},
+	}
+}
+
+func TestGetDeletePodInfo(t *testing.T) {
+	for _, tt := range buildDeletePodInfoCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.fJob.getDeletePodInfo(tt.schedulerJob, tt.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getDeletePodInfo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got != nil && got.isSuperPod != tt.wantSuperPod {
+				t.Errorf("getDeletePodInfo() isSuperPod = %v, want %v", got.isSuperPod, tt.wantSuperPod)
+			}
+		})
+	}
+}
+
+func TestGetNormalJobDeletePodInfo(t *testing.T) {
+	fJob := &FaultJob{
+		JobUID:     mockJobUID,
+		FaultTasks: []FaultTask{{IsFaultTask: true, NodeName: "node0"}},
+		SuperPods:  map[string][]plugin.SuperNode{"0": {{Name: "node0"}}},
+	}
+	schedulerJob := &plugin.SchedulerJob{
+		SchedulerJobAttr: util.SchedulerJobAttr{
+			ComJob: util.ComJob{Annotation: map[string]string{util.SuperPodAnnoKey: "16"}},
+			NPUJob: &util.NPUJob{},
+		},
+	}
+	got, err := fJob.getNormalJobDeletePodInfo(schedulerJob)
+	if err != nil {
+		t.Errorf("getNormalJobDeletePodInfo() error = %v", err)
+	}
+	if !got.isSuperPod || len(got.ids) != 1 {
+		t.Errorf("getNormalJobDeletePodInfo() isSuperPod = %v, ids len = %v", got.isSuperPod, len(got.ids))
+	}
+}
+
+type resourceLevelsCase struct {
+	name    string
+	fJob    *FaultJob
+	env     plugin.ScheduleEnv
+	wantErr bool
+	wantLen int
+}
+
+func buildResourceLevelsCases() []resourceLevelsCase {
+	return []resourceLevelsCase{
+		{name: "01-empty super pods", fJob: &FaultJob{SuperPods: map[string][]plugin.SuperNode{}}, wantErr: true},
+		{
+			name: "02-no match levels",
+			fJob: &FaultJob{SuperPods: map[string][]plugin.SuperNode{"0": {{TopoTreeName: "tree1"}}}},
+			env: plugin.ScheduleEnv{FrameAttr: plugin.VolcanoFrame{
+				ConfigParameters: plugin.ConfigParameters{DynamicParameters: plugin.DynamicParameters{
+					ResourceLevelsInfo: map[string][]util.ResourceTreeLevel{},
+				}}}},
+			wantErr: true,
+		},
+		{
+			name: "03-found levels",
+			fJob: &FaultJob{SuperPods: map[string][]plugin.SuperNode{"0": {{TopoTreeName: "tree1"}}}},
+			env: plugin.ScheduleEnv{FrameAttr: plugin.VolcanoFrame{
+				ConfigParameters: plugin.ConfigParameters{DynamicParameters: plugin.DynamicParameters{
+					ResourceLevelsInfo: map[string][]util.ResourceTreeLevel{"tree1": {{Label: "l0"}, {Label: "l1"}}},
+				}}}},
+			wantErr: false, wantLen: 2,
+		},
+	}
+}
+
+func TestGetResourceLevels(t *testing.T) {
+	for _, tt := range buildResourceLevelsCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.fJob.getResourceLevels(tt.fJob.SuperPods, tt.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getResourceLevels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && len(got) != tt.wantLen {
+				t.Errorf("getResourceLevels() len = %v, want %v", len(got), tt.wantLen)
+			}
+		})
+	}
+}
+
+type isMasterFaultCase struct {
+	name     string
+	fJob     *FaultJob
+	dpi      *deletePodInfo
+	isNpuJob bool
+	want     bool
+}
+
+func buildIsMasterFaultCases() []isMasterFaultCase {
+	return []isMasterFaultCase{
+		{name: "01-nil dpi", fJob: &FaultJob{}, dpi: nil, isNpuJob: true, want: false},
+		{
+			name: "02-master rank fault",
+			fJob: &FaultJob{FaultTasks: []FaultTask{{IsFaultTask: true, NodeRankIndex: util.Rank0, Labels: map[string]string{}}}},
+			dpi:  &deletePodInfo{}, isNpuJob: true, want: true,
+		},
+		{
+			name: "03-non-master fault",
+			fJob: &FaultJob{FaultTasks: []FaultTask{{IsFaultTask: true, NodeRankIndex: "1", Labels: map[string]string{}}}},
+			dpi:  &deletePodInfo{}, isNpuJob: true, want: false,
+		},
+		{
+			name: "04-master in needRescheduleNodes",
+			fJob: &FaultJob{FaultTasks: []FaultTask{{IsFaultTask: true, NodeName: fakeNodeName, NodeRankIndex: util.Rank0, IsNpuTask: true, Labels: map[string]string{}}}},
+			dpi:  &deletePodInfo{needRescheduleNodes: map[string]struct{}{fakeNodeName: {}}}, isNpuJob: true, want: true,
+		},
+		{
+			name: "05-super pod master fault",
+			fJob: &FaultJob{PendingSessionNum: spPendingTimes, FaultTasks: []FaultTask{{NodeName: fakeNodeName, NodeRankIndex: util.Rank0, Labels: map[string]string{}}},
+				SuperPods: map[string][]plugin.SuperNode{"0": {{Name: fakeNodeName}}}},
+			dpi: &deletePodInfo{isSuperPod: true, ids: []string{"0"}}, isNpuJob: true, want: true,
+		},
+	}
+}
+
+func TestIsMasterFault(t *testing.T) {
+	for _, tt := range buildIsMasterFaultCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fJob.isMasterFault(tt.dpi, tt.isNpuJob); got != tt.want {
+				t.Errorf("isMasterFault() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type multiLevelCase struct {
+	name         string
+	fJob         *FaultJob
+	schedulerJob *plugin.SchedulerJob
+	env          plugin.ScheduleEnv
+	wantErr      bool
+	wantLen      int
+}
+
+func buildMultiLevelEnv() plugin.ScheduleEnv {
+	return plugin.ScheduleEnv{
+		ClusterCache: plugin.ClusterCache{
+			Nodes: map[string]plugin.NPUNode{
+				"node0": {CommonNode: plugin.CommonNode{
+					Name:  "node0",
+					Label: map[string]string{util.TopoTreeLabel: "tree1", "level1": "rack0"},
+				}},
+			},
+		},
+		FrameAttr: plugin.VolcanoFrame{
+			ConfigParameters: plugin.ConfigParameters{
+				DynamicParameters: plugin.DynamicParameters{
+					ResourceLevelsInfo: map[string][]util.ResourceTreeLevel{
+						"tree1": {
+							{Label: util.TopoTreeLabel, Type: util.LevelTypeTree},
+							{Label: "level1", Type: util.LevelTypeMiddle},
+							{Label: "node", Type: util.LevelTypeNode},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func buildMultiLevelCases() []multiLevelCase {
+	return []multiLevelCase{
+		{
+			name: "01-empty super pods",
+			fJob: &FaultJob{SuperPods: map[string][]plugin.SuperNode{}},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{NPUTaskNum: 8},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "02-success",
+			fJob: &FaultJob{
+				PendingSessionNum: 0,
+				FaultTasks:        []FaultTask{{IsFaultTask: true, NodeName: "node0"}},
+				SuperPods:         map[string][]plugin.SuperNode{"0": {{Name: "node0", TopoTreeName: "tree1"}}},
+			},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{NPUTaskNum: 2, AffinityBlocks: map[string]int{"level1": 2}},
+				},
+			},
+			env:     buildMultiLevelEnv(),
+			wantErr: false,
+		},
+	}
+}
+
+func TestGetMultiLevelJobDeletePodInfo(t *testing.T) {
+	for _, tt := range buildMultiLevelCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.fJob.getMultiLevelJobDeletePodInfo(tt.schedulerJob, tt.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getMultiLevelJobDeletePodInfo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && got == nil {
+				t.Error("getMultiLevelJobDeletePodInfo() got nil")
+			}
+		})
+	}
+}
+
+func buildNeedRescheduleCases() []multiLevelCase {
+	return []multiLevelCase{
+		{
+			name: "01-empty super pods",
+			fJob: &FaultJob{SuperPods: map[string][]plugin.SuperNode{}},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{NPUTaskNum: 8},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "02-success",
+			fJob: &FaultJob{
+				PendingSessionNum: 0,
+				FaultTasks:        []FaultTask{{IsFaultTask: true, NodeName: "node0"}},
+				SuperPods:         map[string][]plugin.SuperNode{"0": {{Name: "node0", TopoTreeName: "tree1"}}},
+			},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{NPUTaskNum: 2, AffinityBlocks: map[string]int{"level1": 2}},
+				},
+			},
+			env:     buildMultiLevelEnv(),
+			wantErr: false,
+			wantLen: 1,
+		},
+		{
+			name: "03-resource levels failed",
+			fJob: &FaultJob{
+				FaultTasks: []FaultTask{{IsFaultTask: true, NodeName: "node0"}},
+				SuperPods:  map[string][]plugin.SuperNode{"0": {{Name: "node0", TopoTreeName: "tree1"}}},
+			},
+			schedulerJob: &plugin.SchedulerJob{
+				SchedulerJobAttr: util.SchedulerJobAttr{
+					ComJob: util.ComJob{Annotation: map[string]string{}},
+					NPUJob: &util.NPUJob{NPUTaskNum: 2, AffinityBlocks: map[string]int{"level1": 2}},
+				},
+			},
+			env:     plugin.ScheduleEnv{FrameAttr: plugin.VolcanoFrame{ConfigParameters: plugin.ConfigParameters{DynamicParameters: plugin.DynamicParameters{ResourceLevelsInfo: map[string][]util.ResourceTreeLevel{}}}}},
+			wantErr: true,
+		},
+	}
+}
+
+func TestGetNeedReschedulePods(t *testing.T) {
+	for _, tt := range buildNeedRescheduleCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.fJob.getNeedReschedulePods(tt.schedulerJob, tt.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getNeedReschedulePods() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && len(got) != tt.wantLen {
+				t.Errorf("getNeedReschedulePods() len = %v, want %v", len(got), tt.wantLen)
+			}
+		})
+	}
+}
