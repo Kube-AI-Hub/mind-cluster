@@ -25,9 +25,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"ascend-common/api"
+	"ascend-common/common-utils/utils"
 	"ascend-common/devmanager"
 	"ascend-common/devmanager/common"
-
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
 	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils/logger"
@@ -162,7 +162,7 @@ func (c *BaseInfoCollector) PreCollect(n *colcommon.NpuCollector, chipList []col
 		// only A2 and A3 support use new api (dcmi_get_device_utilization_rate_v2)
 		c.realGetDeviceUtilizationRateInfoFunc = collectUtilV1
 		logger.Infof("devType %v does not support get device utilization by v2 api, "+
-			"will use v1 api to get utilization info", devTypeMap[n.Dmgr.GetDevType()])
+			"will use v1 api to get utilization info", utils.MaskDevType(n.Dmgr.GetDevType()))
 		return
 	}
 	if len(chipList) == 0 {
@@ -499,7 +499,7 @@ func collectUtilV1(logicID int32, dmgr devmanager.DeviceInterface, chip *chipCac
 		chip.VectorUtilization = int(vecUtil)
 	} else {
 		logger.LogfWithOptions(logger.WarnLevel, logger.LogOptions{Domain: "vectorUtil", ID: devType, MaxCounts: 1},
-			"%v does not support utilization of vector", devTypeMap[devType])
+			"%v does not support utilization of vector", utils.MaskDevType(devType))
 	}
 
 	// overall
@@ -511,7 +511,7 @@ func collectUtilV1(logicID int32, dmgr devmanager.DeviceInterface, chip *chipCac
 		chip.OverallUtilization = int(overAllUtil)
 	} else {
 		logger.LogfWithOptions(logger.WarnLevel, logger.LogOptions{Domain: "overallUtil", ID: devType, MaxCounts: 1},
-			"%v does not support utilization of overall", devTypeMap[devType])
+			"%v does not support utilization of overall", utils.MaskDevType(devType))
 	}
 
 	// ai cube
@@ -523,7 +523,7 @@ func collectUtilV1(logicID int32, dmgr devmanager.DeviceInterface, chip *chipCac
 		msg = "%v does not support utilization of cube"
 	}
 	logger.LogfWithOptions(logger.WarnLevel,
-		logger.LogOptions{Domain: "cubeUtil", ID: devType, MaxCounts: 1}, msg, devTypeMap[devType])
+		logger.LogOptions{Domain: "cubeUtil", ID: devType, MaxCounts: 1}, msg, utils.MaskDevType(devType))
 }
 
 func collectUtilV2(logicID int32, dmgr devmanager.DeviceInterface, chip *chipCache) {

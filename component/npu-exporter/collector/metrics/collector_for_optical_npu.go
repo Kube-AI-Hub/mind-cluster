@@ -16,7 +16,6 @@
 package metrics
 
 import (
-	"ascend-common/common-utils/hwlog"
 	"fmt"
 	"strconv"
 	"time"
@@ -24,9 +23,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"ascend-common/api"
+	"ascend-common/common-utils/hwlog"
 	"ascend-common/devmanager/common"
 	"ascend-common/devmanager/hccn"
-
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
 	"huawei.com/npu-exporter/v6/collector/container"
 )
@@ -108,12 +107,12 @@ type OpticalNpuCollector struct {
 func (c *OpticalNpuCollector) IsSupported(n *colcommon.NpuCollector) bool {
 	devType := n.Dmgr.GetDevType()
 	if devType != api.Ascend910A5 {
-		logForUnSupportDevice(false, devTypeMap[devType], colcommon.GetCacheKey(c), "")
+		logForUnSupportDevice(false, devType, colcommon.GetCacheKey(c), "")
 		return false
 	}
 	mainBoardID := n.Dmgr.GetMainBoardId()
 	if !supportedOpticalNpuDevices[mainBoardID] {
-		logForUnSupportDevice(false, devTypeMap[devType], colcommon.GetCacheKey(c),
+		logForUnSupportDevice(false, devType, colcommon.GetCacheKey(c),
 			fmt.Sprint("this mainBoardId:", mainBoardID, " is not supported"))
 		return false
 	}
