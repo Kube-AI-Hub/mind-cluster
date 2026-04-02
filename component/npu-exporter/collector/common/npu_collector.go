@@ -24,6 +24,7 @@ import (
 	"ascend-common/api"
 	"ascend-common/common-utils/cache"
 	"ascend-common/common-utils/hwlog"
+	"ascend-common/common-utils/utils"
 	"ascend-common/devmanager"
 	"ascend-common/devmanager/common"
 	"ascend-common/devmanager/dcmi"
@@ -62,12 +63,6 @@ const (
 var fetchPcieOptions = logger.LogOptions{
 	Domain: pcieDomain,
 	ID:     fetchTimeout,
-}
-
-var devTypeMap = map[string]string{
-	api.Ascend910B:  api.Ascend910B,
-	api.Ascend910A3: api.Ascend910A3,
-	api.Ascend910A5: api.VersionNPU,
 }
 
 // NpuCollector for collect metrics
@@ -409,7 +404,7 @@ func setProductType(chip *HuaWeiAIChip, dmgr devmanager.DeviceInterface) {
 			ID:        dmgr.GetDevType(),
 			MaxCounts: 1,
 		},
-			"%v does not support product type info", devTypeMap[dmgr.GetDevType()])
+			"%v does not support product type info", utils.MaskDevType(dmgr.GetDevType()))
 		return
 	}
 

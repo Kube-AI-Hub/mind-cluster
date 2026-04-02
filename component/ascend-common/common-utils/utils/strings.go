@@ -19,6 +19,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"unicode"
+
+	"ascend-common/api"
 )
 
 const (
@@ -72,4 +74,17 @@ func IsDigitString(s string) bool {
 		}
 	}
 	return true
+}
+
+// devTypeMaskMap maps the original devType to the masked devType
+var devTypeMaskMap = map[string]string{
+	api.Ascend910A5: api.VersionNPU,
+}
+
+// MaskDevType masks the devType based on the devTypeMaskMap
+func MaskDevType(devType string) string {
+	if masked, ok := devTypeMaskMap[devType]; ok {
+		return masked
+	}
+	return devType
 }
