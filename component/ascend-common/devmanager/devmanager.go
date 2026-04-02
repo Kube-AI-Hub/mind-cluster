@@ -25,6 +25,7 @@ import (
 
 	"ascend-common/api"
 	"ascend-common/common-utils/hwlog"
+	"ascend-common/common-utils/utils"
 	"ascend-common/devmanager/common"
 	"ascend-common/devmanager/dcmi"
 )
@@ -120,12 +121,6 @@ const (
 	// init dcmi interface retry delay
 	defaultRetryDelay = 10
 )
-
-var devTypeMap = map[string]string{
-	api.Ascend910B:  api.Ascend910B,
-	api.Ascend910A3: api.Ascend910A3,
-	api.Ascend910A5: api.VersionNPU,
-}
 
 var (
 	devManager     *DeviceManager = nil
@@ -570,7 +565,7 @@ func (d *DeviceManager) GetDeviceMemoryInfo(logicID int32) (*common.MemoryInfo, 
 	// 910B and 910A3 and 910A5 don't have DDR module. Therefore, DDR information cannot be queried.
 	if d.DevType == api.Ascend910B || d.DevType == api.Ascend910A3 || d.DevType == api.Ascend910A5 {
 		hwlog.RunLog.Debugf("%s doesn't have DDR module. Therefore, DDR information cannot be queried",
-			devTypeMap[d.DevType])
+			utils.MaskDevType(d.DevType))
 		return nil, nil
 	}
 
@@ -772,7 +767,7 @@ func (d *DeviceManager) GetAllProductType() ([]string, error) {
 // GetNpuWorkMode get work mode of NPU
 func (d *DeviceManager) GetNpuWorkMode() string {
 	if d.DevType == api.Ascend910B || d.DevType == api.Ascend910A3 || d.DevType == api.Ascend910A5 {
-		hwlog.RunLog.Warnf("only AMP mode is available on %s", devTypeMap[d.DevType])
+		hwlog.RunLog.Warnf("only AMP mode is available on %s", utils.MaskDevType(d.DevType))
 		return common.AMPMode
 	}
 

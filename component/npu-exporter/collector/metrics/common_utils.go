@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"ascend-common/common-utils/hwlog"
+	commonutils "ascend-common/common-utils/utils"
 	"ascend-common/devmanager/common"
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
 	"huawei.com/npu-exporter/v6/collector/container"
@@ -168,7 +169,7 @@ func validateNotNilForEveryElement(objs ...interface{}) bool {
 }
 func logForUnSupportDevice(isSupport bool, devType string, group string, extInfo string) {
 	if !isSupport {
-		logger.Infof("devType %v does not support [%v], %v", devTypeMap[devType], group, extInfo)
+		logger.Infof("devType %v does not support [%v], %v", commonutils.MaskDevType(devType), group, extInfo)
 	}
 }
 

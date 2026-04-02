@@ -75,7 +75,7 @@ type netInfoA5Cache struct {
 	extInfo   []*common.NpuNetInfo
 }
 
-// NetworkA5Collector collects the network info
+// NetworkNPUCollector collects the network info
 type NetworkNPUCollector struct {
 	colcommon.MetricsCollectorAdapter
 }
@@ -84,12 +84,12 @@ type NetworkNPUCollector struct {
 func (c *NetworkNPUCollector) IsSupported(n *colcommon.NpuCollector) bool {
 	devType := n.Dmgr.GetDevType()
 	if devType != api.Ascend910A5 {
-		logForUnSupportDevice(false, devTypeMap[devType], colcommon.GetCacheKey(c), "")
+		logForUnSupportDevice(false, devType, colcommon.GetCacheKey(c), "")
 		return false
 	}
 	mainBoardID := n.Dmgr.GetMainBoardId()
 	if notSupportedNetworkA5Devices[mainBoardID] {
-		logForUnSupportDevice(false, devTypeMap[devType], colcommon.GetCacheKey(c),
+		logForUnSupportDevice(false, devType, colcommon.GetCacheKey(c),
 			fmt.Sprint("this mainBoardId:", mainBoardID, " is not supported"))
 		return false
 	}
