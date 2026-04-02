@@ -20,6 +20,7 @@ import unittest
 from tests.st.lib.dl_deployer.install_manager import InstallManager
 from tests.st.st_dev.K8sDistributedManage import K8sDistributedManage
 from tests.st.st_dev.K8sTool import K8sTool
+from tests.st.envs import ipv4_address, username, password, PR_OUTPUT_DIR
 
 
 class MindclusterApplyTest(unittest.TestCase):
@@ -30,10 +31,8 @@ class MindclusterApplyTest(unittest.TestCase):
         if self.installer:
             self.installer.component_name = component_name
             return
-        ip = os.environ.get("ipv4_address")
-        username = os.environ.get("username")
-        password = os.environ.get("password")
-        file_path = os.environ.get("PR_OUTPUT_DIR")
+        ip = ipv4_address
+        file_path = PR_OUTPUT_DIR
         self.installer = InstallManager(ip, username, password, file_path, component_name)
 
     def test_apply_dp(self):

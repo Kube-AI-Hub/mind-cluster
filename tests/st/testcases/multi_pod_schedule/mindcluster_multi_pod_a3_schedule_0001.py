@@ -23,10 +23,11 @@ from tests.st.st_dev.CaseRoutines import CaseRoutines
 from tests.st.st_dev.K8sTool import K8sTool
 from tests.st.st_dev.K8sNode import K8sNode
 from tests.st.st_dev.JobTool import JobHelper
+from tests.st.envs import BASE_DIR
 
 
 class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
-    base_dir = os.environ.get("BASE_DIR")
+    base_dir = BASE_DIR
     resource_dir = os.path.join(base_dir, "basic_schedule/training_910c/resources_0001/")
     job_yaml = resource_dir + "job_llama-2x16.yaml"
     job_name = ["default-test-2x16"]

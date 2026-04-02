@@ -15,13 +15,12 @@
 # limitations under the License.
 # ==============================================================================
 import logging
-import os
-import re
 import socket
 from time import sleep, time
 import traceback
-import string
 import paramiko
+from tests.st.envs import SSH_LOG_LEVEL
+
 
 RESULT_CODE = "rc"
 INPUT_LIST = "input"
@@ -39,7 +38,7 @@ class ClassSsh(object):
 
     def __init__(self, ip, username, password, port=22, password_hidden="***", **kwargs):
         self.logger = logging.getLogger("ssh-mindcluster")
-        logging_level = os.environ.get("SSH_LOG_LEVEL", "INFO")
+        logging_level = SSH_LOG_LEVEL
         logging.basicConfig(level=logging_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.ip = ip
         self.username = username

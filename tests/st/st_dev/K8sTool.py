@@ -18,6 +18,8 @@ import logging
 import os
 import time
 
+from tests.st.envs import MIND_CLUSTER_YAML_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -147,19 +149,18 @@ class K8sTool(object):
     def delete_yaml_by_file(case, yaml_path):
         return case.k8s_manager.exec_command("kubectl delete -f %s" % yaml_path)
 
-    def find_volcano_yaml(k8s_manager):
-        yaml = k8s_manager.master.exec_command(
-            f'find {os.environ.get("MIND_CLUSTER_YAML_DIR")} -name "volcano-*.yaml"')
+    @staticmethod
+    def find_volcano_yaml(case):
+        yaml = case.k8s_manager.master.exec_command(
+            f'find {MIND_CLUSTER_YAML_DIR} -name "volcano-*.yaml"')
         if not yaml:
-            yaml = k8s_manager.master.exec_command(f'find /home/update/yamls -name "volcano-*.yaml"')
-            if not yaml:
-                raise Exception("未找到volcano组件yaml！")
+            raise Exception("未找到volcano组件yaml！")
         return yaml
 
     @staticmethod
     def modify_volcano_yaml(case, super_pod_size="512", useClusterInfoManager="false"):
         logger.info("修改volcano yaml配置")
-        volcano_yaml_path = K8sTool.find_volcano_yaml(case.k8s_manager)
+        volcano_yaml_path = K8sTool.find_volcano_yaml(case)
         if super_pod_size is not None:
             case.k8s_manager.master.exec_command(
                 f"sed -i 's/\"super-pod-size\": \"[0-9]\\+\"/\"super-pod-size\": \"{super_pod_size}\"/g'"
@@ -172,7 +173,7 @@ class K8sTool(object):
 
     @staticmethod
     def reset_volcano_yaml(case):
-        volcano_yaml_path = K8sTool.find_volcano_yaml(case.k8s_manager)
+        volcano_yaml_path = K8sTool.find_volcano_yaml(case)
         case.k8s_manager.master.exec_command(f"sed -i 's/\"super-pod-size\": \"[0-9]\\+\"/"
                                              f"\"super-pod-size\": \"48\"/g' \"{volcano_yaml_path}\"")
         case.k8s_manager.master.exec_command(f"sed -i 's/\"useClusterInfoManager\":\"\\(false\\|true\\)\"/"
@@ -186,14 +187,13 @@ class K8sTool(object):
                                              f"--card_unhealthy \"npu-0\"")
 
     @staticmethod
-    def restart_volcano(k8s_manager, volcano_yaml_path):
+    def restart_volcano(k8s_manager):
         logger.info("重启volcano")
-        k8s_manager.master.exec_command(f'kubectl delete -f {volcano_yaml_path}')
+        k8s_manager.master.exec_command("kubectl delete pod -n volcano-system -l app=volcano-scheduler")
         time.sleep(5)
-        k8s_manager.master.exec_command(f'kubectl apply -f {volcano_yaml_path}')
 
     @staticmethod
-    def apply_mindcluster(case, yaml_path="/home/update/yamls"):
+    def apply_mindcluster(case, yaml_path=MIND_CLUSTER_YAML_DIR):
         case.k8s_manager.master.exec_command(
             "kubectl create ns mindx-dl && kubectl create ns volcano-system && kubectl create ns cluster-system")
         case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f device-plugin-npu-volcano-*.yaml")
@@ -207,7 +207,7 @@ class K8sTool(object):
         case.k8s_manager.exec_command(f"kubectl label pod -n {ns} {pod_name} software-fault=occur")
 
     @staticmethod
-    def apply_mindcluster_v2(case, yaml_path="/home/update/yamls"):
+    def apply_mindcluster_v2(case, yaml_path=MIND_CLUSTER_YAML_DIR):
         case.k8s_manager.master.exec_command(
             "kubectl create ns mindx-dl && kubectl create ns volcano-system && kubectl create ns cluster-system")
         case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl delete -f device-plugin-npu-volcano-*.yaml")

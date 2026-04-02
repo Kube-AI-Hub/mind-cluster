@@ -10,11 +10,12 @@ from tests.st.st_dev.JobTool import JobHelper
 from tests.st.st_dev.K8sDistributedManage import K8sDistributedManage
 from tests.st.st_dev.K8sTool import K8sTool
 from tests.st.st_dev.K8sNode import K8sNode
+from tests.st.envs import BASE_DIR
 
 NODE_NUM = 8
 NODE_NAME = "910ax8"
 MODULE_910B_8 = "module-910b-8"
-BASE_DIR = "/workspace/mind-cluster/tests/st/testcases/"
+
 
 class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
     resource_dir = BASE_DIR + "multi_node_schedule/resources_0001/"
@@ -51,7 +52,6 @@ class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
         ret = self.k8s_manager.exec_command(f"kubectl get pod {self.job_name1}'")
         self.assertTrue(len(ret) == 0, "job delete fail")
 
-
     def test_valid_job_006(self):
         ClusterSimulator.delete_kwok_cluster(self)
         self.assertIs(ClusterSimulator.get_ready_kwok_node_count(self), 0)
@@ -62,5 +62,3 @@ class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
         ClusterSimulator.delete_kwok_cluster(self)
         self.k8s_manager.exec_command("kubectl uncordon localhost.localdomain master")
 
-if __name__ == '__main__':
-    unittest.main()
