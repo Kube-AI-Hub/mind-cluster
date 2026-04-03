@@ -28,7 +28,7 @@ from tests.st.envs import BASE_DIR
 
 class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
     base_dir = BASE_DIR
-    resource_dir = os.path.join(base_dir, "basic_schedule/training_910c/resources_0001/")
+    resource_dir = os.path.join(base_dir, "multi_pod_reschedule/resources_0001/")
     job_yaml = resource_dir + "job_llama-2x16.yaml"
     job_name = ["default-test-2x16"]
     k8s_manager = K8sDistributedManage()
