@@ -19,18 +19,21 @@ import unittest
 
 from tests.st.st_dev.K8sDistributedManage import K8sDistributedManage
 from tests.st.st_dev.K8sTool import K8sTool
-from tests.st.envs import MIND_CLUSTER_YAML_DIR
+from tests.st.envs import BACKUP_YAML_DIR
 
 
 class MindClusterComponentRecoverCases(unittest.TestCase):
     k8s_manager = K8sDistributedManage()
-    base_dir = MIND_CLUSTER_YAML_DIR
-    dp_yaml = "device-plugin-volcano-*.yaml"
-    volcano_yaml = "volcano-*.yaml"
-    clusterd_yaml = "clusterd-*.yaml"
-    ascend_operator_yaml = "ascend-operator-*.yaml"
-    noded_yaml = "noded-*.yaml"
-    npu_exporter_yaml = "npu-exporter-*.yaml"
+    base_dir = BACKUP_YAML_DIR
+    dp_yaml = "device-plugin-volcano-v*.yaml"
+    volcano_yaml = "volcano-v*.yaml"
+    clusterd_yaml = "clusterd-v*.yaml"
+    ascend_operator_yaml = "ascend-operator-v*.yaml"
+    noded_yaml = "noded-v*.yaml"
+    npu_exporter_yaml = "npu-exporter-v*.yaml"
+
+    def test_recover_node(self):
+        self.k8s_manager.exec_command("kubectl uncordon master")
 
     def test_mindcluster_recover_dp(self):
         dp_path = os.path.join(self.base_dir, self.dp_yaml)

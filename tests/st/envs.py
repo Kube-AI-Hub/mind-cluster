@@ -40,6 +40,8 @@ env_variables: Dict[str, Callable[[], Any]] = {
     # the logging level of the ssh connection
     "SSH_LOG_LEVEL":
         lambda: os.getenv("SSH_LOG_LEVEL", "INFO"),
+    "BACKUP_YAML_DIR":
+        lambda: os.getenv("BACKUP_YAML_DIR", None),
 }
 
 
@@ -47,8 +49,5 @@ def __getattr__(name: str):
     # lazy evaluation of environment variables
     if name in env_variables:
         return env_variables[name]()
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError(f"environment dont have attribute {name!r}")
 
-
-def __dir__():
-    return list(env_variables.keys())

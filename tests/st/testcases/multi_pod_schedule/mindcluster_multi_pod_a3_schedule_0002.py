@@ -28,7 +28,7 @@ from tests.st.envs import BASE_DIR
 
 class MindclusterA3JobReschedule(unittest.TestCase):
     base_dir = BASE_DIR
-    resource_dir = os.path.join(base_dir, "multi_pod_reschedule/resources_0002/")
+    resource_dir = os.path.join(base_dir, "multi_pod_schedule/resources_0002/")
     job_yaml = resource_dir + "job_llama-2x16.yaml"
     job_name = ["default-test-2x16"]
     k8s_manager = K8sDistributedManage()
@@ -41,13 +41,17 @@ class MindclusterA3JobReschedule(unittest.TestCase):
         ClusterSimulator.mock_kwok_cluster_a3(cls, "910csuperpod", 1, 3)
         K8sTool.modify_volcano_yaml(cls, 3)
 
+    def setUp(self) -> None:
+        self.test_method_name = self._testMethodName
+        self.logger.info("test method: %s", self.test_method_name)
+
     def test_mindcluster_a3_job_reschedule_001(self):
         self.assertIs(ClusterSimulator.get_ready_kwok_node_count(self), 3, "kwok nodes are not ready")
-    
+
     def test_mindcluster_a3_job_reschedule_002(self):
         K8sNode.set_accelerator_type_a3(self, "910csuperpod", 3, "module-a3-16-super-pod")
         self.assertIs(ClusterSimulator.get_kwok_nodes_with_accelerator_type(self, "module-a3-16-super-pod"),
-                    3, "kwok nodes with a3 accelerator type are not ready")
+                      3, "kwok nodes with a3 accelerator type are not ready")
 
     def test_mindcluster_a3_job_reschedule_003(self):
         K8sTool.apply_mindcluster_v2(self)

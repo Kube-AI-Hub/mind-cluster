@@ -169,7 +169,7 @@ class K8sTool(object):
             case.k8s_manager.master.exec_command(
                 f"sed -i 's/\"useClusterInfoManager\":\"\\(false\\|true\\)\"/\"useClusterInfoManager\":\"{useClusterInfoManager}\"/g'"
                 f" \"{volcano_yaml_path}\"")
-        K8sTool.restart_volcano(case.k8s_manager, volcano_yaml_path)
+        K8sTool.restart_volcano(case.k8s_manager)
 
     @staticmethod
     def reset_volcano_yaml(case):
@@ -178,7 +178,7 @@ class K8sTool(object):
                                              f"\"super-pod-size\": \"48\"/g' \"{volcano_yaml_path}\"")
         case.k8s_manager.master.exec_command(f"sed -i 's/\"useClusterInfoManager\":\"\\(false\\|true\\)\"/"
                                              f"\"useClusterInfoManager\":\"true\"/g' \"{volcano_yaml_path}\"")
-        K8sTool.restart_volcano(case.k8s_manager, volcano_yaml_path)
+        K8sTool.restart_volcano(case.k8s_manager)
 
     @staticmethod
     def fault_inject(case):

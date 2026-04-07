@@ -28,7 +28,7 @@ from tests.st.envs import BASE_DIR
 
 class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
     base_dir = BASE_DIR
-    resource_dir = os.path.join(base_dir, "multi_pod_reschedule/resources_0001/")
+    resource_dir = os.path.join(base_dir, "multi_pod_schedule/resources_0001/")
     job_yaml = resource_dir + "job_llama-2x16.yaml"
     job_name = ["default-test-2x16"]
     k8s_manager = K8sDistributedManage()
@@ -40,6 +40,10 @@ class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
     def setUpClass(cls):
         ClusterSimulator.mock_kwok_cluster_a3(cls, node_name="910csuperpod", super_pod_num=1, super_pod_size=3)
         K8sTool.modify_volcano_yaml(cls, super_pod_size=3)
+
+    def setUp(self) -> None:
+        self.test_method_name = self._testMethodName
+        self.logger.info("test method: %s", self.test_method_name)
 
     def test_valid_job_000(self):
         self.assertIs(ClusterSimulator.get_ready_kwok_node_count(self), 3, "kwok nodes are not ready")

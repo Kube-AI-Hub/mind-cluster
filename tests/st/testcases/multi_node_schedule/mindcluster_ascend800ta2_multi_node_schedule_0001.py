@@ -39,6 +39,10 @@ class MindclusterAscend800ta2MutliNodeSchedule0001(unittest.TestCase):
     def setUpClass(self):
         self.k8s_manager.exec_command("kubectl delete -f %s" % self.job_yaml_path1)
 
+    def setUp(self) -> None:
+        self.test_method_name = self._testMethodName
+        self.logger.info("test method: %s", self.test_method_name)
+
     def test_valid_job_000(self):
         K8sTool.apply_mindcluster(self)
         self.assertTrue(CaseRoutines.check_mind_cluster(self), "mindcluster is not ready")
