@@ -1,7 +1,7 @@
 // Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
 
 // Package custom a series of job fault code and fault levels filter info function
-// for the mindie server job, custom will automatically filter L2 faults, UCE error, and cqe error
+// for the mindie server job, custom will automatically filter L2 faults
 package custom
 
 import (
@@ -23,11 +23,6 @@ const (
 )
 
 var (
-	mindIeServerFilterCodes = map[string]time.Duration{
-		constant.DevCqeFaultCode:  constant.CustomFilterFaultDefaultTimeout,
-		constant.HostCqeFaultCode: constant.CustomFilterFaultDefaultTimeout,
-		constant.UceFaultCode:     constant.CustomFilterFaultDefaultTimeout,
-	}
 	mindIeServerFilterLevels = map[string]time.Duration{
 		constant.RestartRequestFaultLevelStr: constant.CustomFilterFaultDefaultTimeout,
 	}
@@ -59,13 +54,10 @@ func init() {
 }
 
 // SetCustomFilterCodes set custom filter codes
-func (c *customFault) SetCustomFilterCodes(jobKey, value string, isMindIeServerJob bool) {
+func (c *customFault) SetCustomFilterCodes(jobKey, value string) {
 	c.rwMutex.Lock()
 	defer c.rwMutex.Unlock()
 	filterCodes := parseCustomFilterFaultAnnoValue(value)
-	if isMindIeServerJob {
-		util.MergeStringMapListOnlyNewKeys(filterCodes, mindIeServerFilterCodes)
-	}
 	if len(filterCodes) == 0 {
 		return
 	}
@@ -182,11 +174,6 @@ func splitValueWithComma(value string) []string {
 // JudgeFilterFaultAnnosByJobKey judge whether job should filter fault code or level
 func JudgeFilterFaultAnnosByJobKey(jobKey string) bool {
 	return len(CustomFault.jobFilterCodes[jobKey]) > 0 || len(CustomFault.jobFilterLevels[jobKey]) > 0
-}
-
-// GetDefaultMindIeServerFilterCodes get default mindIeServerFilterCodes
-func GetDefaultMindIeServerFilterCodes() map[string]time.Duration {
-	return mindIeServerFilterCodes
 }
 
 // GetDefaultMindIeServerFilterLevels get default mindIeServerFilterLevels

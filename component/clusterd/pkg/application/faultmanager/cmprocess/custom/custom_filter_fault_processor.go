@@ -13,7 +13,7 @@
 */
 
 // Package custom is used to filter custom faults defined in job yaml.
-// for the mindie server job, custom will automatically filter L2 faults, UCE error, and cqe error
+// for the mindie server job, custom will automatically filter L2 faults
 package custom
 
 import (

@@ -84,8 +84,7 @@ func SaveJobCache(jobKey string, jobInfo constant.JobInfo) {
 
 func saveExtraCache(jobInfo *constant.JobInfo) {
 	podGroup := podgroup.GetPodGroup(jobInfo.Key)
-	custom.CustomFault.SetCustomFilterCodes(jobInfo.Key, podGroup.Annotations[constant.CustomFilterFaultCodeAnnoKey],
-		IsMindIeServerJob(jobInfo))
+	custom.CustomFault.SetCustomFilterCodes(jobInfo.Key, podGroup.Annotations[constant.CustomFilterFaultCodeAnnoKey])
 	custom.CustomFault.SetCustomFilterLevels(jobInfo.Key, podGroup.Annotations[constant.CustomFilterFaultLevelAnnoKey],
 		IsMindIeServerJob(jobInfo))
 }
