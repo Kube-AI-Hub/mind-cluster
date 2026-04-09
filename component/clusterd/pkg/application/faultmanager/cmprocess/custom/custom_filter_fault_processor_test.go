@@ -1,7 +1,7 @@
 // Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 
 // Package custom is used to filter custom faults defined in job yaml.
-// for the mindie server job, custom will automatically filter L2 faults, UCE error, and cqe error
+// for the mindie server job, custom will automatically filter L2 faults
 package custom
 
 import (
@@ -379,11 +379,16 @@ func testL2LevelFaultScenarios(l2Fault constant.FaultTimeAndLevel, testCases tes
 		})
 
 		convey.Convey("When fault code duration not exceeds 60s, should not report", func() {
+			mindIeServerFilterCodes := map[string]time.Duration{
+				constant.DevCqeFaultCode:  constant.CustomFilterFaultDefaultTimeout,
+				constant.HostCqeFaultCode: constant.CustomFilterFaultDefaultTimeout,
+				constant.UceFaultCode:     constant.CustomFilterFaultDefaultTimeout,
+			}
 			patch := patchWithOffset(testCases.timeout - time.Second)
 			defer patch.Reset()
 			res := shouldReportFault(l2Fault, constant.JobInfo{Key: testCases.jobId1},
 				testCases.deviceName1, constant.DevCqeFaultCode,
-				custom.GetDefaultMindIeServerFilterCodes(), custom.GetDefaultMindIeServerFilterLevels())
+				mindIeServerFilterCodes, custom.GetDefaultMindIeServerFilterLevels())
 			convey.So(res, convey.ShouldBeFalse)
 		})
 	})

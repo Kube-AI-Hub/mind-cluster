@@ -1,7 +1,7 @@
 // Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
 
 // Package custom a series of job fault code and fault levels filter info function
-// for the mindie server job, custom will automatically filter L2 faults, UCE error, and cqe error
+// for the mindie server job, custom will filter L2 faults
 package custom
 
 import (
@@ -65,7 +65,7 @@ func TestSetAndGetCustomFilterCodes(t *testing.T) {
 		p := mockCustomFault()
 		labelValue := "code1,code2:20，[0x00f10509,132333,npu,na],"
 		convey.Convey("job is training job, get filter codes from label", func() {
-			p.SetCustomFilterCodes(job1, labelValue, false)
+			p.SetCustomFilterCodes(job1, labelValue)
 			res := p.GetCustomFilterCodes(job1)
 			convey.So(res, convey.ShouldResemble, map[string]time.Duration{
 				"code1":                      constant.CustomFilterFaultDefaultTimeout,
@@ -74,19 +74,17 @@ func TestSetAndGetCustomFilterCodes(t *testing.T) {
 			})
 		})
 		convey.Convey("job is mindie server job, get filter codes from default codes", func() {
-			p.SetCustomFilterCodes(job1, "", true)
+			p.SetCustomFilterCodes(job1, "")
 			res := p.GetCustomFilterCodes(job1)
-			convey.So(res, convey.ShouldResemble, GetDefaultMindIeServerFilterCodes())
+			convey.So(res, convey.ShouldBeNil)
 		})
 		convey.Convey("job is mindie server job, codes from label overwrite default codes", func() {
 			labelValue = "code1," + constant.DevCqeFaultCode + ":20"
-			p.SetCustomFilterCodes(job1, labelValue, true)
+			p.SetCustomFilterCodes(job1, labelValue)
 			res := p.GetCustomFilterCodes(job1)
 			convey.So(res, convey.ShouldResemble, map[string]time.Duration{
-				"code1":                   constant.CustomFilterFaultDefaultTimeout,
-				constant.DevCqeFaultCode:  timeOut * time.Second,
-				constant.HostCqeFaultCode: constant.CustomFilterFaultDefaultTimeout,
-				constant.UceFaultCode:     constant.CustomFilterFaultDefaultTimeout,
+				"code1":                  constant.CustomFilterFaultDefaultTimeout,
+				constant.DevCqeFaultCode: timeOut * time.Second,
 			})
 		})
 	})
