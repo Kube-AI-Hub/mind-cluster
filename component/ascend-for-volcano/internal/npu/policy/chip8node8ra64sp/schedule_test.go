@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/common/util"
+	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/internal/npu/base"
 	"volcano.sh/volcano/pkg/scheduler/plugins/ascend-volcano-plugin/plugin"
 )
 
@@ -192,7 +194,7 @@ func TestSelectNodesFromSuperPods(t *testing.T) {
 				uBMemRackNum: uBMemRackNumber, // 16
 			}
 			err := plg.selectNodesFromSuperPods(cs.superPodMap, unReadyID, selectedNodes)
-			if !reflect.DeepEqual(err, cs.wantErr) {
+			if (err == nil && cs.wantErr != nil) || (err != nil && cs.wantErr == nil) || (err != nil && cs.wantErr != nil && err.Error() != cs.wantErr.Error()) {
 				t.Errorf("EntrySelect error = %v but wantErr %v", err, cs.wantErr)
 			}
 			if !reflect.DeepEqual(checkScoreBestNPUNodesResult(selectedNodes), cs.wantRes) {
@@ -225,4 +227,229 @@ func buildSuperPodMapWithUBMemByParams(superPodMap map[int32]map[int32]int32) ma
 	}
 
 	return result
+}
+
+// createTestNodesForCheckSuperPod creates test nodes for TestMulSuperPodsStrategyCheckSuperPodIsSatisfied
+func createTestNodesForCheckSuperPod() map[string]plugin.NPUNode {
+	return map[string]plugin.NPUNode{
+		"node1": {
+			CommonNode: plugin.CommonNode{
+				Name: "node1",
+				Annotation: map[string]string{
+					networkUnhealthyNPU: "",
+				},
+			},
+		},
+		"node2": {
+			CommonNode: plugin.CommonNode{
+				Name: "node2",
+				Annotation: map[string]string{
+					networkUnhealthyNPU: "npu-0",
+				},
+			},
+		},
+		"node3": {
+			CommonNode: plugin.CommonNode{
+				Name:       "node3",
+				Annotation: map[string]string{
+					// No networkUnhealthyNPU annotation
+				},
+			},
+		},
+	}
+}
+
+// createTestStrategyForCheckSuperPod creates a mulSuperPodsStrategy instance for TestMulSuperPodsStrategyCheckSuperPodIsSatisfied
+func createTestStrategyForCheckSuperPod(nodes map[string]plugin.NPUNode) *mulSuperPodsStrategy {
+	return &mulSuperPodsStrategy{
+		strategy: &strategy{
+			chip8node8ra64sp: &chip8node8ra64sp{
+				NPUHandler: base.NPUHandler{
+					MaxNodeNPUNum: nodeNPUNum,
+					ScheduleEnv: plugin.ScheduleEnv{
+						ClusterCache: plugin.ClusterCache{
+							Nodes: nodes,
+						},
+					},
+					SchedulerJobAttr: util.SchedulerJobAttr{
+						NPUJob: &util.NPUJob{
+							ReqNPUName: util.NPUCardName,
+						},
+					},
+				},
+				jobParams: jobParams{
+					tpBlock:         tpBlock1,
+					spBlock:         spBlock1,
+					netUnhealthyKey: networkUnhealthyNPU,
+				},
+			},
+		},
+	}
+}
+
+// TestMulSuperPodsStrategyCheckSuperPodIsSatisfied tests the checkSuperPodIsSatisfied method
+func TestMulSuperPodsStrategyCheckSuperPodIsSatisfied(t *testing.T) {
+	// Create test nodes and strategy
+	testNodes := createTestNodesForCheckSuperPod()
+	tp := createTestStrategyForCheckSuperPod(testNodes)
+
+	testCases := []struct {
+		name       string
+		trackGroup map[int32][]nodeBaseInfo
+		want       bool
+	}{
+		{
+			name: "01-checkSuperPodIsSatisfied return true with healthy nodes",
+			trackGroup: map[int32][]nodeBaseInfo{
+				1: {
+					{name: "node1"},
+					{name: "node3"},
+				},
+			},
+			want: true,
+		},
+		{
+			name:       "02-checkSuperPodIsSatisfied return false with nil rackGroup",
+			trackGroup: nil,
+			want:       false,
+		},
+		{
+			name: "03-checkSuperPodIsSatisfied return false with unhealthy nodes",
+			trackGroup: map[int32][]nodeBaseInfo{
+				1: {
+					{name: "node2"},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "04-checkSuperPodIsSatisfied return false with not enough healthy nodes",
+			trackGroup: map[int32][]nodeBaseInfo{
+				1: {
+					{name: "node2"},
+				},
+				2: {
+					{name: "node2"},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tp.checkSuperPodIsSatisfied(tt.trackGroup); got != tt.want {
+				t.Errorf("checkSuperPodIsSatisfied() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// createTestNodes creates test nodes for TestMulSuperPodsStrategyIsNodeNetworkHealthy
+func createTestNodes() map[string]plugin.NPUNode {
+	return map[string]plugin.NPUNode{
+		"node1": {
+			CommonNode: plugin.CommonNode{
+				Name: "node1",
+				Annotation: map[string]string{
+					networkUnhealthyNPU: "npu-0",
+				},
+			},
+		},
+		"node2": {
+			CommonNode: plugin.CommonNode{
+				Name: "node2",
+				Annotation: map[string]string{
+					networkUnhealthyNPU: "",
+				},
+			},
+		},
+		"node3": {
+			CommonNode: plugin.CommonNode{
+				Name:       "node3",
+				Annotation: map[string]string{},
+			},
+		},
+		"node4": {
+			CommonNode: plugin.CommonNode{
+				Name: "node4",
+				Annotation: map[string]string{
+					networkUnhealthyNPU: "npu-0,npu-1,npu-2,npu-3,npu-4,npu-5,npu-6,npu-7",
+				},
+			},
+		},
+	}
+}
+
+// createTestMulSuperPodsStrategy creates a test mulSuperPodsStrategy instance
+func createTestMulSuperPodsStrategy(nodes map[string]plugin.NPUNode) *mulSuperPodsStrategy {
+	return &mulSuperPodsStrategy{
+		strategy: &strategy{
+			chip8node8ra64sp: &chip8node8ra64sp{
+				NPUHandler: base.NPUHandler{
+					MaxNodeNPUNum: nodeNPUNum,
+					ScheduleEnv: plugin.ScheduleEnv{
+						ClusterCache: plugin.ClusterCache{
+							Nodes: nodes,
+						},
+					},
+					SchedulerJobAttr: util.SchedulerJobAttr{
+						NPUJob: &util.NPUJob{
+							ReqNPUName: util.NPUCardName,
+						},
+					},
+				},
+				jobParams: jobParams{
+					netUnhealthyKey: networkUnhealthyNPU,
+				},
+			},
+		},
+	}
+}
+
+// TestMulSuperPodsStrategyIsNodeNetworkHealthy tests the isNodeNetworkHealthy function
+func TestMulSuperPodsStrategyIsNodeNetworkHealthy(t *testing.T) {
+	nodes := createTestNodes()
+	tp := createTestMulSuperPodsStrategy(nodes)
+
+	cases := []struct {
+		name     string
+		nodeName string
+		want     bool
+	}{
+		{
+			name:     "node1 has unhealthy npu",
+			nodeName: "node1",
+			want:     false,
+		},
+		{
+			name:     "node2 is healthy",
+			nodeName: "node2",
+			want:     true,
+		},
+		{
+			name:     "node3 has no network annotation",
+			nodeName: "node3",
+			want:     true,
+		},
+		{
+			name:     "node4 all npu unhealthy",
+			nodeName: "node4",
+			want:     false,
+		},
+		{
+			name:     "node5 not exist",
+			nodeName: "node5",
+			want:     false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tp.isNodeNetworkHealthy(tt.nodeName)
+			if got != tt.want {
+				t.Errorf("isNodeNetworkHealthy() for node %s = %v, want %v", tt.nodeName, got, tt.want)
+			}
+		})
+	}
 }

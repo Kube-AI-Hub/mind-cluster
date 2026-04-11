@@ -36,13 +36,18 @@ func (tp *chip8node8ra64sp) getUsableTopFromNode(node plugin.NPUNode) ([]int, er
 		return nil, errors.New(util.ArgumentError)
 	}
 
-	// Use a default value directly instead of relying on tp.ReqNPUName
-	topStr, ok := node.Annotation[tp.GetAnnoName(tp.ReqNPUName)]
-	if !ok || len(topStr) == 0 {
-		return nil, fmt.Errorf("getUsableTopFromNode %s don't have %s", node.Name, tp.GetAnnoName(tp.ReqNPUName))
+	// Check if NPUJob is nil and set default reqNPUName
+	reqNPUName := util.NPUCardName // Default value
+	if tp.NPUJob != nil {
+		reqNPUName = tp.NPUJob.ReqNPUName
 	}
 
-	nodeTop := util.ChangeTopToIntArray(topStr, tp.GetAnnoPreVal(tp.ReqNPUName))
+	topStr, ok := node.Annotation[tp.GetAnnoName(reqNPUName)]
+	if !ok || len(topStr) == 0 {
+		return nil, fmt.Errorf("getUsableTopFromNode %s don't have %s", node.Name, tp.GetAnnoName(reqNPUName))
+	}
+
+	nodeTop := util.ChangeTopToIntArray(topStr, tp.GetAnnoPreVal(reqNPUName))
 	// the max card num of one node is 8
 	if len(nodeTop) > npuNumber8 {
 		err := fmt.Errorf("node npu num is invalid, and the npus index: %v", nodeTop)
@@ -50,26 +55,10 @@ func (tp *chip8node8ra64sp) getUsableTopFromNode(node plugin.NPUNode) ([]int, er
 		return nil, err
 	}
 
-	networkUnhealthyTopStr, ok := node.Annotation[tp.netUnhealthyKey]
-	if !ok {
-		err := fmt.Errorf("node<%s> don't have resource<%s>", node.Name, tp.netUnhealthyKey)
-		klog.V(util.LogErrorLev).Infof(getNPUFromPodFailedPattern, tp.GetPluginName(), err.Error())
-		return nil, err
-	}
-	networkUnhealthyTop := util.ChangeTopToIntArray(networkUnhealthyTopStr, tp.GetAnnoPreVal(tp.ReqNPUName))
-	if len(networkUnhealthyTop) > tp.MaxNodeNPUNum {
-		err := fmt.Errorf("node<%s> npu networkUnhealthy top<%v> is invalid", node.Name, networkUnhealthyTop)
-		klog.V(util.LogErrorLev).Infof(getNPUFromPodFailedPattern, tp.GetPluginName(), err.Error())
-		return nil, err
-	}
+	// Filter DPU fault cards
+	nodeTop = tp.filterDpuFault(nodeTop, node)
 
-	res := util.RemoveCommonElement(nodeTop, networkUnhealthyTop)
-	// print logs to record the usable npu numbers when it's not equal to 8
-	if len(res) != npuNumber8 {
-		klog.V(util.LogInfoLev).Infof("the len of the final usable npus in the node<%s> is %d", node.Name, len(res))
-	}
-	nodeNPUTopology := tp.filterDpuFault(res, node)
-	return nodeNPUTopology, nil
+	return nodeTop, nil
 }
 
 func (tp *chip8node8ra64sp) checkNodeStaticParams(_ *api.TaskInfo, node plugin.NPUNode) error {
@@ -94,10 +83,33 @@ func (tp *chip8node8ra64sp) checkNodeNPUNums(task *api.TaskInfo, node plugin.NPU
 		return err
 	}
 
+	// Check if we need multi SuperPod strategy
+	// Use the same logic as getStrategyNameByNPUTaskNum to determine multi-superpod scheduling
+	isMultiSuperPod := false
+	strategyName := tp.getStrategyNameByNPUTaskNum()
+	if strategyName == MulSuperPodsSchedule {
+		isMultiSuperPod = true
+	}
+
 	nodeTop, err := tp.getUsableTopFromNode(node)
 	if err != nil {
 		klog.V(util.LogDebugLev).Infof("%s getUsableTopFromNode err: %s", tp.GetPluginName(), err.Error())
 		return err
+	}
+
+	// For multi SuperPod strategy, check and filter network unhealthy cards
+	if isMultiSuperPod {
+		networkUnhealthyTopStr, ok := node.Annotation[tp.netUnhealthyKey]
+		if !ok {
+			// For multi SuperPod strategy, node must have network unhealthy annotation
+			return fmt.Errorf("node<%s> don't have resource<%s>", node.Name, tp.netUnhealthyKey)
+		}
+
+		if len(networkUnhealthyTopStr) > 0 {
+			// Filter network unhealthy cards for multi SuperPod strategy
+			networkUnhealthyTop := util.ChangeTopToIntArray(networkUnhealthyTopStr, tp.GetAnnoPreVal(tp.ReqNPUName))
+			nodeTop = util.RemoveCommonElement(nodeTop, networkUnhealthyTop)
+		}
 	}
 
 	if err = tp.NPUHandler.JudgeNodeAndTaskNPU(taskNPUNum, nodeTop); err != nil {
