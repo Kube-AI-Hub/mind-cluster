@@ -465,8 +465,21 @@ func (tp *mulSuperPodsStrategy) iterateEverySuperPod(superPods []superPod) {
 
 // checkSuperPodIsSatisfied whether this superPod can be scheduled
 func (tp *mulSuperPodsStrategy) checkSuperPodIsSatisfied(rackGroup map[int32][]nodeBaseInfo) bool {
+	if rackGroup == nil {
+		klog.V(util.LogWarningLev).Infof("%s checkSuperPodIsSatisfied: rackGroup is nil.", tp.GetPluginName())
+		return false
+	}
 	tpBlockNum := 0
 	for rackId := range rackGroup {
+		// Filter nodes with network unhealthy cards for mulSuperPodsSchedule
+		filteredNodes := make([]nodeBaseInfo, 0)
+		for _, node := range rackGroup[rackId] {
+			if tp.isNodeNetworkHealthy(node.name) {
+				filteredNodes = append(filteredNodes, node)
+			}
+		}
+		rackGroup[rackId] = filteredNodes
+
 		tpBlockNum += len(rackGroup[rackId]) / tp.tpBlock
 
 		// here is different from check func in one SuperPod strategy
@@ -475,6 +488,44 @@ func (tp *mulSuperPodsStrategy) checkSuperPodIsSatisfied(rackGroup map[int32][]n
 		}
 	}
 	return false
+}
+
+// isNodeNetworkHealthy checks if a node is network healthy
+func (tp *mulSuperPodsStrategy) isNodeNetworkHealthy(nodeName string) bool {
+	// Optimized nil checks using a single condition
+	if tp == nil || tp.strategy == nil || tp.strategy.chip8node8ra64sp == nil || tp.strategy.chip8node8ra64sp.NPUJob == nil {
+		klog.V(util.LogErrorLev).Infof("%s isNodeNetworkHealthy: strategy or chip8node8ra64sp is nil.", tp.GetPluginName())
+		return false
+	}
+
+	// Get node from cache
+	node, ok := tp.ScheduleEnv.ClusterCache.Nodes[nodeName]
+	if !ok {
+		klog.V(util.LogErrorLev).Infof("%s isNodeNetworkHealthy: node<%s> not found in cluster cache.", tp.GetPluginName(), nodeName)
+		return false
+	}
+
+	// Check if node.Annotation is nil
+	if node.Annotation == nil {
+		return true
+	}
+
+	// Get network unhealthy cards information
+	networkUnhealthyTopStr, ok := node.Annotation[tp.strategy.chip8node8ra64sp.netUnhealthyKey]
+	if !ok {
+		// If no network unhealthy information, assume all cards are healthy
+		return true
+	}
+
+	networkUnhealthyTop := util.ChangeTopToIntArray(networkUnhealthyTopStr,
+		tp.GetAnnoPreVal(tp.strategy.chip8node8ra64sp.NPUJob.ReqNPUName))
+	if len(networkUnhealthyTop) > tp.MaxNodeNPUNum {
+		err := fmt.Errorf("node<%s> npu networkUnhealthy top<%v> is invalid", nodeName, networkUnhealthyTop)
+		klog.V(util.LogErrorLev).Infof("%s: %s", tp.GetPluginName(), err.Error())
+		return false
+	}
+
+	return len(networkUnhealthyTop) == 0
 }
 
 func (tp *mulSuperPodsStrategy) selectFromSuperPodsWithSoftStrategy(superPodTable superPodOrderTable, remainingNodesSelecting int) int {
@@ -501,6 +552,18 @@ func (tp *mulSuperPodsStrategy) IterateEverySuperPodWithoutFilter(superPods []su
 		selectedOneSp := 0
 		rackGroup := transferSuperPodToRackIdMap(superPods[i])
 		rackIdGroup := sortRackIdByLengthInOneSuperPod(rackGroup)
+
+		// Filter nodes with network unhealthy cards for soft strategy as well
+		for rackId := range rackGroup {
+			filteredNodes := make([]nodeBaseInfo, 0)
+			for _, node := range rackGroup[rackId] {
+				if tp.isNodeNetworkHealthy(node.name) {
+					filteredNodes = append(filteredNodes, node)
+				}
+			}
+			rackGroup[rackId] = filteredNodes
+		}
+
 		superPods[i], selectedOneSp = tp.doNoFilterSelect(superPods[i], rackIdGroup, remainingNodesSelecting, recorder)
 		remainingNodesSelecting -= selectedOneSp
 	}
