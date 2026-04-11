@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import json
 import logging
 import time
 from typing import Dict
@@ -80,5 +81,29 @@ class JobHelper(object):
         if label_name in res:
             return True
         return False
+
+    @staticmethod
+    def get_server_count_from_ranktable(case, ranktable_path):
+        """
+        从 hccl.json 中获取 server_count 并返回整数
+        """
+        cmd = f"cat {ranktable_path}"
+        res = case.k8s_manager.master.exec_command(cmd)
+
+        if not res:
+            print("Error: 无法获取文件内容或内容为空")
+            return 0
+
+        try:
+            data = json.loads(res)
+            server_count = int(data.get("server_count", 0))
+            return server_count
+
+        except json.JSONDecodeError as e:
+            print(f"Error: JSON 解析失败 - {e}")
+            return 0
+        except (ValueError, TypeError) as e:
+            print(f"Error: server_count 格式转换失败 - {e}")
+            return 0
 
 

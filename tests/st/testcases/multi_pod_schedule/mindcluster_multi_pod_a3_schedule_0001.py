@@ -38,7 +38,7 @@ class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ClusterSimulator.mock_kwok_cluster_a3(cls, node_name="910csuperpod", super_pod_num=1, super_pod_size=3)
+        ClusterSimulator.create_kwok_cluster_a3(cls, container_name="a3_container", node_name="910csuperpod", super_pod_num=1, super_pod_size=3)
         K8sTool.modify_volcano_yaml(cls, super_pod_size=3)
 
     def setUp(self) -> None:
@@ -84,6 +84,6 @@ class MindclusterMultiPoda3Schedule0001(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        ClusterSimulator.stop_cluster_simulator_a3(cls)
+        ClusterSimulator.stop_kwok_cluster(cls, "a3_container")
         cls.k8s_manager.exec_command("kubectl delete -f %s" % cls.job_yaml)
         K8sTool.reset_volcano_yaml(cls)

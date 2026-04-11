@@ -22,18 +22,28 @@ logger = logging.getLogger(__name__)
 
 class ClusterSimulator(object):
     @staticmethod
-    def create_kwok_cluster(case, node_name, node_num):
+    def create_kwok_cluster(case, container_name, node_name, node_num):
         case.k8s_manager.exec_command(
-            f"docker run -d -v /root/.kube/config:/root/.kube/config --rm cluster_simulator:v1.7 simulate {node_name} --node_num {node_num}")
-        # Wait for nodes to be created completely
-        time.sleep(5)
+            f"docker run -d --name {container_name} -v /root/.kube/config:/root/.kube/config "
+            f"-v /workspace/mind-cluster/tests/st/specs/:/cluster_simulator/specs "
+            f"--rm cluster_simulator:base simulate {node_name} --node_num {node_num}")
+        time.sleep(3)
 
     @staticmethod
-    def delete_kwok_cluster(case):
+    def create_kwok_cluster_a3(case, container_name, node_name, super_pod_num, super_pod_size, node_num=4):
         case.k8s_manager.exec_command(
-            f"docker run -d -v /root/.kube/config:/root/.kube/config --rm cluster_simulator:v1.7 cleanup")
-        # Wait for nodes to be created completely
-        time.sleep(5)
+            f"docker run -d --name {container_name} "
+            f"-v /root/.kube/config:/root/.kube/config "
+            f"-v /workspace/mind-cluster/tests/st/specs/:/cluster_simulator/specs --rm cluster_simulator:base "
+            f"simulate {node_name} --super_pod_num {super_pod_num} --super_pod_size {super_pod_size} --node_num {node_num}")
+        time.sleep(2)
+
+    @staticmethod
+    def stop_kwok_cluster(case, container_name):
+        case.k8s_manager.master.exec_command(f"docker rm -f {container_name}")
+        case.k8s_manager.exec_command(
+            f"docker run -d -v /root/.kube/config:/root/.kube/config --rm cluster_simulator:base cleanup")
+        time.sleep(3)
 
     @staticmethod
     def inject_kwok_software_fault(case, namespace, pod_name):
@@ -73,48 +83,3 @@ class ClusterSimulator(object):
         except (ValueError, Exception) as e:
             case.logger.error(f"Failed to get kwok nodes with accelerator-type {accelerator_type} after timeout: {e}")
             return 0
-
-    # 设置超节点大小，参数为框的数目，并且让原有节点不可调度
-    @staticmethod
-    def start_cluster_simulator(case, *superpod_sizes: int):
-        total_nodes = sum(superpod_sizes) * 8
-        superpod_sizes = ' '.join(list(map(str, superpod_sizes)))
-        ClusterSimulator.stop_cluster_simulator(case)
-        res = case.k8s_manager.master.exec_command(f"docker run -d  --name my_container -v /root/.kube/config:/root/.kube/config --rm \
-                                        cluster_simulator:v1.7 simulate davidx8superpod --super_pod_sizes \
-                                        {superpod_sizes}")
-
-        if "Unable to find image" in res:
-            raise Exception("cluster_simulator 镜像不存在！")
-
-        kwok_nodes, i = 0, 0
-        while i < 120:
-            i += 1
-            kwok_nodes = int(case.k8s_manager.master.exec_command(f"kubectl get nodes | grep kwok | wc -l"))
-            if kwok_nodes >= total_nodes:
-                break
-            time.sleep(1)
-        if kwok_nodes < total_nodes:
-            raise Exception(f"kwok nodes less than {total_nodes}")
-
-        case.k8s_manager.master.exec_command(
-            "kubectl get nodes | awk {'print $1'} | grep work | xargs -I {}  kubectl cordon {}")
-
-    @staticmethod
-    def stop_cluster_simulator(case):
-        case.k8s_manager.master.exec_command("docker rm -f my_container")
-        case.k8s_manager.master.exec_command(
-            "docker run  --rm -v /root/.kube/config:/root/.kube/config cluster_simulator:v1.8 cleanup")
-        case.k8s_manager.master.exec_command(
-            "kubectl get nodes | awk {'print $1'} | grep work | xargs -I {}  kubectl uncordon {}")
-
-    @staticmethod
-    def mock_kwok_cluster_a3(case, node_name, super_pod_num, super_pod_size):
-        case.k8s_manager.exec_command(f"docker run -d  --name my_container -v /root/.kube/config:/root/.kube/config --rm \
-         cluster_simulator:v1.8 simulate {node_name} --super_pod_num {super_pod_num} --super_pod_size {super_pod_size}")
-
-    @staticmethod
-    def stop_cluster_simulator_a3(case):
-        case.k8s_manager.master.exec_command("docker rm -f my_container")
-        case.k8s_manager.master.exec_command(
-            "docker run  --rm -v /root/.kube/config:/root/.kube/config cluster_simulator:v1.8 cleanup")

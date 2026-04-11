@@ -248,13 +248,14 @@ class K8sTool(object):
 
     @staticmethod
     def apply_mindcluster(case, yaml_path=MIND_CLUSTER_YAML_DIR):
-        case.k8s_manager.master.exec_command(
+        case.k8s_manager.exec_command("chmod 777 /user/mindx-dl")
+        case.k8s_manager.exec_command(
             "kubectl create ns mindx-dl && kubectl create ns volcano-system && kubectl create ns cluster-system")
-        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f device-plugin-npu-volcano-*.yaml")
-        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f ascend-operator-*.yaml")
-        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f volcano-*.yaml")
-        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f clusterd-*.yaml")
-        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f noded-*.yaml")
+        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f device-plugin-volcano-v*.yaml")
+        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f ascend-operator-v*.yaml")
+        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f volcano-v*.yaml")
+        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f clusterd-v*.yaml")
+        case.k8s_manager.exec_command(f"cd {yaml_path} && kubectl apply -f noded-v*.yaml")
 
     @staticmethod
     def insert_software_fault(case, ns="default", pod_name=""):

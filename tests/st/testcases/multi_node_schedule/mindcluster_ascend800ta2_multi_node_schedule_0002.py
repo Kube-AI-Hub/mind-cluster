@@ -23,6 +23,7 @@ class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
     job_name1 = "default-test-pytorch-8pod-8npu"
     k8s_manager = K8sDistributedManage()
     logger = k8s_manager.logger
+    ranktable_path = "/user/mindx-dl/ranktable/default.default-test-pytorch-8pod-8npu/hccl.json"
 
     @classmethod
     def setUpClass(self):
@@ -36,7 +37,7 @@ class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
         K8sTool.apply_mindcluster(self)
 
     def test_multinode_schedule_deployment_001(self):
-        ClusterSimulator.create_kwok_cluster(self, node_name=NODE_NAME, node_num=NODE_NUM + 2)
+        ClusterSimulator.create_kwok_cluster(self, container_name="a2_container", node_name=NODE_NAME, node_num=NODE_NUM + 2)
 
     def test_multinode_schedule_deployment_002(self):
         self.assertIs(ClusterSimulator.get_ready_kwok_node_count(self), NODE_NUM + 2)
@@ -52,17 +53,21 @@ class MindclusterAscend800ta2MutliNodeSchedule0002(unittest.TestCase):
         self.assertTrue(K8sTool.check_pod_status(self, self.job_name1), "pod is not running")
 
     def test_multinode_schedule_deployment_005(self):
+        server_count = JobHelper.get_server_count_from_ranktable(self, self.ranktable_path)
+        self.assertTrue(server_count == 8, "ranktable check error")
+
+    def test_multinode_schedule_deployment_006(self):
         self.k8s_manager.exec_command("kubectl delete -f %s" % self.job_yaml_path1)
         ret = self.k8s_manager.exec_command(f"kubectl get pod {self.job_name1}'")
         self.assertTrue(len(ret) == 0, "job delete fail")
 
-    def test_multinode_schedule_deployment_006(self):
-        ClusterSimulator.delete_kwok_cluster(self)
+    def test_multinode_schedule_deployment_007(self):
+        ClusterSimulator.stop_kwok_cluster(self, "a2_container")
         self.assertIs(ClusterSimulator.get_ready_kwok_node_count(self), 0)
 
     @classmethod
     def tearDownClass(self):
         self.k8s_manager.exec_command("kubectl delete -f %s" % self.job_yaml_path1)
-        ClusterSimulator.delete_kwok_cluster(self)
+        ClusterSimulator.stop_kwok_cluster(self, "a2_container")
         self.k8s_manager.exec_command("kubectl uncordon localhost.localdomain master")
 
