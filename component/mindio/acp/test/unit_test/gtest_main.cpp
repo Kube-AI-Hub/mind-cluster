@@ -33,7 +33,7 @@ static int GetWorkPath(std::string &configPath)
 
     realPath[size] = '\0';
     std::string path{ realPath };
-    std::string tempPath = std::move(path.substr(0, path.find("/test/build/dfs_hdt")));
+    std::string tempPath = std::move(path.substr(0, path.find("/test/build/ockio_test")));
     configPath = tempPath + "/output";
     return 0;
 }

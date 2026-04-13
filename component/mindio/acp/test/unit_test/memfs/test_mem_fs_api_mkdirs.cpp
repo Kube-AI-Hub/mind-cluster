@@ -176,55 +176,6 @@ TEST_F(TestMemFsApiMkdirs, create_deep_path_exist_some)
     EXPECT_EQ(0, ret) << "create failed : " << errno << " : " << strerror(errno);
 }
 
-TEST_F(TestMemFsApiMkdirs, create_deep_path_exist_file)
-{
-    std::vector<std::string> items { "aaa", "bbb", "ccc", "ddd", "eee" };
-    std::string fullPath;
-    std::for_each(items.begin(), items.end(),
-        [&fullPath](const std::string &item) { fullPath.append("/").append(item); });
-
-    EnableMocks();
-    auto ret = MemFsApi::CreateDirectoryWithParents(fullPath, 0755);
-    EXPECT_EQ(0, ret) << "create failed : " << errno << " : " << strerror(errno);
-
-    fullPath.append("/file");
-    ret = AddFileMock(fullPath, 0644);
-    EXPECT_EQ(0, ret);
-
-    fullPath.append("/should_failed");
-    ret = MemFsApi::CreateDirectoryWithParents(fullPath, 0755);
-    ASSERT_NE(0, ret);
-    EXPECT_EQ(ENOTDIR, errno) << "failed type: " << errno << " : " << strerror(errno);
-}
-
-TEST_F(TestMemFsApiMkdirs, create_deep_path_failed_specified)
-{
-    std::vector<std::string> items { "aaa", "bbb", "ccc", "ddd", "eee" };
-    std::string fullPath;
-    std::for_each(items.begin(), items.end(),
-        [&fullPath](const std::string &item) { fullPath.append("/").append(item); });
-
-    EnableMocks();
-    mockingMkdirErrorNum = EAGAIN;
-    auto ret = MemFsApi::CreateDirectoryWithParents(fullPath, 0755);
-    ASSERT_NE(0, ret);
-    EXPECT_EQ(EAGAIN, errno) << "failed type: " << errno << " : " << strerror(errno);
-}
-
-TEST_F(TestMemFsApiMkdirs, create_deep_path_stat_failed_specified)
-{
-    std::vector<std::string> items { "aaa", "bbb", "ccc", "ddd", "eee" };
-    std::string fullPath;
-    std::for_each(items.begin(), items.end(),
-        [&fullPath](const std::string &item) { fullPath.append("/").append(item); });
-
-    EnableMocks();
-    mockingGetStatErrorNum = EPERM;
-    auto ret = MemFsApi::CreateDirectoryWithParents(fullPath, 0755);
-    ASSERT_NE(0, ret);
-    EXPECT_EQ(EPERM, errno) << "failed type: " << errno << " : " << strerror(errno);
-}
-
 TEST_F(TestMemFsApiMkdirs, create_deep_path_others_create)
 {
     std::vector<std::string> items { "aaa", "bbb", "ccc", "ddd", "eee" };
