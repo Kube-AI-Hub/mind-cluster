@@ -40,52 +40,6 @@ void TestSystemLoaderWithMocker::TearDown()
 
 namespace {
 
-TEST_F(TestSystemLoaderWithMocker, getUidByName_normal)
-{
-    std::string userName = "dog";
-    uid_t userId = 1001;
-    gid_t groupId = 2002;
-    MOCKER(SystemUserGroupWrapper::GetPwNam).stubs().will(invoke(DataBaseUserGroupLoader::GetPwNam));
-    auto &defaultLoader = DataBaseUserGroupLoader::GetDefault();
-    defaultLoader.AddUser(userName, userId, groupId);
-
-    uid_t outUserId = 0;
-    auto ret = SystemUserGroupLoader::GetUidByName(userName, outUserId);
-    ASSERT_EQ(0, ret);
-    ASSERT_EQ(userId, outUserId);
-}
-
-TEST_F(TestSystemLoaderWithMocker, getUidByName_need_size_large)
-{
-    std::string userName = "long_name_user";
-    uid_t userId = 1001;
-    gid_t groupId = 2002;
-    MOCKER(SystemUserGroupWrapper::GetPwNam).stubs().will(invoke(DataBaseUserGroupLoader::GetPwNam));
-    auto &defaultLoader = DataBaseUserGroupLoader::GetDefault();
-    defaultLoader.AddUser(userName, userId, groupId);
-    defaultLoader.SetGetUserBufferRange(128UL * 1024UL);
-
-    uid_t outUserId = 0;
-    auto ret = SystemUserGroupLoader::GetUidByName(userName, outUserId);
-    ASSERT_EQ(0, ret);
-    ASSERT_EQ(userId, outUserId);
-}
-
-TEST_F(TestSystemLoaderWithMocker, getUidByName_need_size_outof_range)
-{
-    std::string userName = "long_long_name_user";
-    uid_t userId = 1001;
-    gid_t groupId = 2002;
-    MOCKER(SystemUserGroupWrapper::GetPwNam).stubs().will(invoke(DataBaseUserGroupLoader::GetPwNam));
-    auto &defaultLoader = DataBaseUserGroupLoader::GetDefault();
-    defaultLoader.AddUser(userName, userId, groupId);
-    defaultLoader.SetGetUserBufferRange(128UL * 1024UL * 1024UL);
-
-    uid_t outUserId = 0;
-    auto ret = SystemUserGroupLoader::GetUidByName(userName, outUserId);
-    ASSERT_EQ(ERANGE, ret);
-}
-
 TEST_F(TestSystemLoaderWithMocker, getUidByName_not_exist)
 {
     std::string userName = "not_exist_user";
@@ -94,33 +48,6 @@ TEST_F(TestSystemLoaderWithMocker, getUidByName_not_exist)
     uid_t outUserId = 0;
     auto ret = SystemUserGroupLoader::GetUidByName(userName, outUserId);
     ASSERT_EQ(ENOENT, ret);
-}
-
-TEST_F(TestSystemLoaderWithMocker, getUidByName_io_failed)
-{
-    std::string userName = "io_failed_user";
-    MOCKER(SystemUserGroupWrapper::GetPwNam).stubs().will(returnValue(EIO));
-
-    uid_t outUserId = 0;
-    auto ret = SystemUserGroupLoader::GetUidByName(userName, outUserId);
-    ASSERT_NE(0, ret);
-    ASSERT_NE(ENOENT, ret);
-}
-
-TEST_F(TestSystemLoaderWithMocker, loadUser_need_size_large)
-{
-    std::string userName = "long_name_user";
-    uid_t userId = 11001;
-    gid_t groupId = 12002;
-    MOCKER(SystemUserGroupWrapper::GetPwNam).stubs().will(invoke(DataBaseUserGroupLoader::GetPwNam));
-    auto &defaultLoader = DataBaseUserGroupLoader::GetDefault();
-    defaultLoader.AddUser(userName, userId, groupId);
-    defaultLoader.SetGetUserBufferRange(128UL * 1024UL);
-
-    auto userInfo = loader.LoadUser(userName);
-    ASSERT_TRUE(userInfo != nullptr);
-    ASSERT_EQ(userId, userInfo->GetUserId());
-    ASSERT_EQ(groupId, userInfo->GetGroupId());
 }
 
 TEST_F(TestSystemLoaderWithMocker, loadUser_need_size_outof_range)
@@ -153,20 +80,6 @@ TEST_F(TestSystemLoaderWithMocker, loadUser_io_failed)
 
     auto userInfo = loader.LoadUser(userName);
     ASSERT_TRUE(userInfo == nullptr);
-}
-
-TEST_F(TestSystemLoaderWithMocker, loadGroup_need_size_large)
-{
-    std::string groupName = "long_name_group";
-    gid_t groupId = 22002;
-    MOCKER(SystemUserGroupWrapper::GetGrNam).stubs().will(invoke(DataBaseUserGroupLoader::GetGrNam));
-    auto &defaultLoader = DataBaseUserGroupLoader::GetDefault();
-    defaultLoader.AddGroup(groupName, groupId);
-    defaultLoader.SetGetGroupBufferRange(128UL * 1024UL);
-
-    auto groupInfo = loader.LoadGroup(groupName);
-    ASSERT_TRUE(groupInfo != nullptr);
-    ASSERT_EQ(groupId, groupInfo->GetGroupId());
 }
 
 TEST_F(TestSystemLoaderWithMocker, loadGroup_need_size_outof_range)

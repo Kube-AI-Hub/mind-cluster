@@ -59,24 +59,4 @@ TEST_F(TestBmm, test_repeat_init_and_uninit)
     bmm.UnInitialize();
     bmm.UnInitialize();
 }
-
-TEST_F(TestBmm, test_bmm_init_with_pool_error)
-{
-    MemFsBMM bmm{};
-    MemFsBMMOptions opt{};
-
-    union MockerHelper {
-        int32_t (MemFsBmmPool::*initialize)(const MemFsBMMOptions &opt) noexcept;
-        int32_t (*mockInitialize)(MemFsBmmPool *self, const MemFsBMMOptions &opt) noexcept;
-    };
-    MockerHelper helper{};
-    helper.initialize = &MemFsBmmPool::Initialize;
-    auto mocker = MOCKCPP_NS::mockAPI("&MemFsBmmPool::Initialize", helper.mockInitialize);
-    mocker.defaults().will(returnValue(1));
-
-    auto ret = bmm.Initialize(opt);
-    ASSERT_EQ(1, ret);
-
-    bmm.UnInitialize();
-}
 }

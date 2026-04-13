@@ -17,6 +17,8 @@
 #ifndef TTP_LOGGER_H
 #define TTP_LOGGER_H
 
+#include <string>
+
 namespace ock {
 namespace ttp {
 

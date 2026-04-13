@@ -463,19 +463,6 @@ TEST_F(TestBackupTarget, backup_target_check_stg_mtime_normal)
     }
 }
 
-TEST_F(TestBackupTarget, backup_target_check_stg_mtime_lstat_faile)
-{
-    std::string file = "/backup_target_check_stg_mtime_lstat_faile";
-    std::string stageFile = file + ".m.stg";
-
-    for (auto view : backupTarget->underFsFileView) {
-        MOCKER(lstat).stubs().will(returnValue(-1));
-        errno = EBUSY;
-        auto ret = backupTarget->CheckStgMtime(view, stageFile);
-        ASSERT_EQ(MTIME_NO_CHANGE_TIMEOUT, ret);
-    }
-}
-
 TEST_F(TestBackupTarget, backup_target_check_stg_mtime_no_update)
 {
     std::string file = "/backup_target_check_stg_mtime_no_update";

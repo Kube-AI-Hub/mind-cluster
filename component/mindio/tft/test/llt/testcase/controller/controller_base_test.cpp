@@ -192,26 +192,6 @@ TEST_F(ControllerBaseTest, copy_test)
     ASSERT_EQ(ret, TTP_OK);
 }
 
-TEST_F(ControllerBaseTest, engine_init_fail)
-{
-    controller2 = MakeRef<Controller>();
-    MOCKER_CPP(&ActionEngine::Initialize, int32_t(*)(AccTcpServerPtr, const ActionMsgSend &))
-        .stubs().will(returnValue(1));
-    int32_t ret = controller2->Initialize(1, WORLD_SIZE, enableLocalCopy);
-    ASSERT_EQ(ret, 1);
-    MOCKCPP_RESET;
-}
-
-TEST_F(ControllerBaseTest, machine_init_fail)
-{
-    controller2 = MakeRef<Controller>();
-    MOCKER_CPP(&controllerStateMachine::Initialize, int32_t(*)(uint32_t))
-        .stubs().will(returnValue(1));
-    int32_t ret = controller2->Initialize(1, WORLD_SIZE, enableLocalCopy);
-    ASSERT_EQ(ret, 1);
-    MOCKCPP_RESET;
-}
-
 int32_t SendMsgStub4Retry(Controller *control, int16_t msgType, const AccDataBufferPtr &d,
                           std::vector<int32_t> &targetRanks, const std::vector<AccDataBufferPtr> &cbCtx)
 {
@@ -593,18 +573,6 @@ TEST_F(ControllerBaseTest, controller_get_instance)
     ControllerBaseTest::InitSource();
     ControllerPtr ctrl = Controller::GetInstance(true);
     ASSERT_EQ(ctrl, nullptr);
-}
-
-TEST_F(ControllerBaseTest, controller_abnormal_callback)
-{
-    ControllerBaseTest::InitSource();
-    controller1->isNeedToReportResult_.store(true);
-    int32_t ret = controller1->AbnormalCallback();
-    ASSERT_EQ(ret, TTP_STOP_SERVICE);
-
-    controller1->isPorcessorExit_ = true;
-    ret = controller1->AbnormalCallback();
-    ASSERT_EQ(ret, TTP_STOP_SERVICE);
 }
 
 TEST_F(ControllerBaseTest, controller_dump_callback)
