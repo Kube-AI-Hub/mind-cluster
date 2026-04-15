@@ -92,7 +92,7 @@ mindio_acp.create_file(path: str, mode: int = 0o600)
 ## 使用样例<a name="zh-cn_topic_0000002112429502_section81115380412"></a>
 
 ```
->>> x = torch.tensor([0, 1, 2, 3, 4])
+>>> x = b'\x00\x01\x02\x03\x04'
 >>> with mindio_acp.create_file('/mnt/dpc01/checkpoint/rank-0.pt') as f:
 ...     write_result = f.write(x)
 ```
