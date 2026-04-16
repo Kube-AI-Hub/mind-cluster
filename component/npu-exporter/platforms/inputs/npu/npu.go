@@ -24,7 +24,6 @@ import (
 
 	"ascend-common/api"
 	"huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils/logger"
 )
 
@@ -113,7 +112,7 @@ func handleGeneralMetrics(acc telegraf.Accumulator, fieldsMap map[string]map[str
 }
 
 func (npu *WatchNPU) gatherChain(fieldsMap map[string]map[string]interface{}, chain []common.MetricsCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
 
 	for _, collector := range chain {
 		fieldsMap = collector.UpdateTelegraf(fieldsMap, npu.collector, containerMap, chips)

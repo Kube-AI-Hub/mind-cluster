@@ -27,7 +27,6 @@ import (
 	"ascend-common/devmanager/common"
 	"ascend-common/devmanager/hccn"
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 )
 
 const (
@@ -244,7 +243,7 @@ func (c *OpticalCollector) CollectToCache(n *colcommon.NpuCollector, chipList []
 
 // UpdatePrometheus update prometheus metrics
 func (c *OpticalCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 	if devType == api.Ascend910A5 {
 		// Update Npu specific optical metrics
 		updateSingleChipNpu := func(chipWithVnpu colcommon.HuaWeiAIChip, cache opticalNpuCache, cardLabel []string) {
@@ -280,7 +279,7 @@ func (c *OpticalCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colc
 
 // UpdateTelegraf update telegraf metrics
 func (c *OpticalCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 	if devType == api.Ascend910A5 {
 		// Update Npu specific optical metrics
 		caches := colcommon.GetInfoFromCache[opticalNpuCache](n, colcommon.GetCacheKey(c))

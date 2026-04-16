@@ -17,6 +17,7 @@ package common
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -75,7 +76,7 @@ func StartContainerInfoCollect(ctx context.Context, cancelFunc context.CancelFun
 }
 
 // GetContainerNPUInfo get container npu info
-func GetContainerNPUInfo(n *NpuCollector) map[int32]container.DevicesInfo {
+func GetContainerNPUInfo(n *NpuCollector) DeviceContainerMap {
 	obj, err := n.cache.Get(containersDevicesCacheKey)
 	// only run once to prevent wait when container info get failed
 	npuContainerInfoInit.Do(func() {
@@ -99,11 +100,16 @@ func GetContainerNPUInfo(n *NpuCollector) map[int32]container.DevicesInfo {
 		return nil
 	}
 	hwlog.ResetErrCnt(DomainForContainerInfo, 0)
-	res := make(map[int32]container.DevicesInfo, initSize)
+	res := make(DeviceContainerMap, initSize)
 	for _, v := range cntNpuInfos {
 		for _, deviceID := range v.Devices {
-			res[int32(deviceID)] = v
+			res[int32(deviceID)] = append(res[int32(deviceID)], v)
 		}
+	}
+	for deviceID := range res {
+		sort.Slice(res[deviceID], func(i, j int) bool {
+			return res[deviceID][i].ID < res[deviceID][j].ID
+		})
 	}
 	return res
 }

@@ -30,7 +30,6 @@ import (
 	"ascend-common/common-utils/hwlog"
 	"ascend-common/common-utils/utils"
 	"huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils/logger"
 )
 
@@ -225,7 +224,7 @@ func checker(jsonFilePath string, structInfo string, newData string, logFlag str
 
 // UpdatePrometheus update prometheus metric
 func (c *TextMetricsInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) {
 	logger.Debug("TextMetricsInfoCollector UpdatePrometheus")
 	c.update(func(jsonFilePath string, structInfo metricStructInfo, timestamp time.Time, item DataItem, index int) {
 		labelValues := make([]string, len(structInfo.labels))
@@ -244,7 +243,7 @@ func (c *TextMetricsInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric,
 
 // UpdateTelegraf update telegraf metric
 func (c *TextMetricsInfoCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
 	logger.Debug("TextMetricsInfoCollector UpdateTelegraf")
 	if fieldsMap[common.KeyForTextMetrics] == nil {
 		fieldsMap[common.KeyForTextMetrics] = make(map[string]interface{})

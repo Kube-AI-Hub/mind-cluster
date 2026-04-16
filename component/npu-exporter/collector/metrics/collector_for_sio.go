@@ -25,7 +25,6 @@ import (
 	"ascend-common/devmanager/common"
 
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 )
 
 var (
@@ -85,7 +84,7 @@ func (c *SioCollector) CollectToCache(n *colcommon.NpuCollector, chipList []colc
 
 // UpdatePrometheus update prometheus metrics
 func (c *SioCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 
 	updateSingleChip := func(chipWithVnpu colcommon.HuaWeiAIChip, cache sioCache, cardLabel []string) {
 		extInfo := cache.extInfo
@@ -100,7 +99,7 @@ func (c *SioCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommo
 
 // UpdateTelegraf update telegraf metrics
 func (c *SioCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 
 	caches := colcommon.GetInfoFromCache[sioCache](n, colcommon.GetCacheKey(c))
 	for _, chip := range chips {

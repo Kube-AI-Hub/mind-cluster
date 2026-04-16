@@ -35,8 +35,10 @@ const (
 	testDeviceID2      = 2
 	testContainerID1   = "container1"
 	testContainerID2   = "container2"
+	testContainerID3   = "container3"
 	testContainerName1 = "test-container-1"
 	testContainerName2 = "test-container-2"
+	testContainerName3 = "test-container-3"
 )
 
 var (
@@ -72,7 +74,7 @@ type getContainerNPUInfoTestCase struct {
 	name           string
 	setupCache     func(*NpuCollector)
 	mockParser     func(*gomonkey.Patches, *container.DevicesParser)
-	expectedResult map[int32]container.DevicesInfo
+	expectedResult DeviceContainerMap
 }
 
 func createGetContainerNPUInfoTestCases() []getContainerNPUInfoTestCase {
@@ -83,10 +85,10 @@ func createGetContainerNPUInfoTestCases() []getContainerNPUInfoTestCase {
 				n.cache.Set(containersDevicesCacheKey, testDevicesInfos, testCacheTime)
 			},
 			mockParser: func(patches *gomonkey.Patches, parser *container.DevicesParser) {},
-			expectedResult: map[int32]container.DevicesInfo{
-				int32(testDeviceID0): testDevicesInfos[testContainerID1],
-				int32(testDeviceID1): testDevicesInfos[testContainerID1],
-				int32(testDeviceID2): testDevicesInfos[testContainerID2],
+			expectedResult: DeviceContainerMap{
+				int32(testDeviceID0): {testDevicesInfos[testContainerID1]},
+				int32(testDeviceID1): {testDevicesInfos[testContainerID1]},
+				int32(testDeviceID2): {testDevicesInfos[testContainerID2]},
 			},
 		},
 		{
@@ -100,10 +102,32 @@ func createGetContainerNPUInfoTestCases() []getContainerNPUInfoTestCase {
 						}
 					})
 			},
-			expectedResult: map[int32]container.DevicesInfo{
-				int32(testDeviceID0): testDevicesInfos[testContainerID1],
-				int32(testDeviceID1): testDevicesInfos[testContainerID1],
-				int32(testDeviceID2): testDevicesInfos[testContainerID2],
+			expectedResult: DeviceContainerMap{
+				int32(testDeviceID0): {testDevicesInfos[testContainerID1]},
+				int32(testDeviceID1): {testDevicesInfos[testContainerID1]},
+				int32(testDeviceID2): {testDevicesInfos[testContainerID2]},
+			},
+		},
+		{
+			name: "should preserve all containers that share one device id",
+			setupCache: func(n *NpuCollector) {
+				sharedDevices := container.DevicesInfos{
+					testContainerID1: testDevicesInfos[testContainerID1],
+					testContainerID3: {
+						ID:      testContainerID3,
+						Name:    testContainerName3,
+						Devices: []int{testDeviceID0},
+					},
+				}
+				n.cache.Set(containersDevicesCacheKey, sharedDevices, testCacheTime)
+			},
+			mockParser: func(patches *gomonkey.Patches, parser *container.DevicesParser) {},
+			expectedResult: DeviceContainerMap{
+				int32(testDeviceID0): {
+					testDevicesInfos[testContainerID1],
+					{ID: testContainerID3, Name: testContainerName3, Devices: []int{testDeviceID0}},
+				},
+				int32(testDeviceID1): {testDevicesInfos[testContainerID1]},
 			},
 		},
 		{

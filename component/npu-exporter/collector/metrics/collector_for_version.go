@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/versions"
 )
 
@@ -40,13 +39,13 @@ func (c *VersionCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // UpdatePrometheus update prometheus metric
 func (c *VersionCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) {
 	ch <- prometheus.MustNewConstMetric(versionInfoDesc, prometheus.GaugeValue, 1, []string{versions.BuildVersion}...)
 }
 
 // UpdateTelegraf update telegraf metric
 func (c *VersionCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
 
 	if fieldsMap[common.GeneralDevTagKey] == nil {
 		fieldsMap[common.GeneralDevTagKey] = make(map[string]interface{})

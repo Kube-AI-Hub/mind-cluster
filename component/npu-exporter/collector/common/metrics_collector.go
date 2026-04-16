@@ -39,6 +39,9 @@ var (
 	}
 )
 
+// DeviceContainerMap maps a physical or virtual device ID to all matching containers.
+type DeviceContainerMap map[int32][]container.DevicesInfo
+
 // BuildDescSlice build desc slice
 func BuildDescSlice(slice *[]*prometheus.Desc, name string, help string) {
 	*slice = append(*slice, BuildDesc(name, help))
@@ -63,12 +66,12 @@ type MetricsCollector interface {
 	CollectToCache(n *NpuCollector, chipList []HuaWeiAIChip)
 
 	// UpdatePrometheus update prometheus
-	UpdatePrometheus(ch chan<- prometheus.Metric, n *NpuCollector, containerMap map[int32]container.DevicesInfo,
+	UpdatePrometheus(ch chan<- prometheus.Metric, n *NpuCollector, containerMap DeviceContainerMap,
 		chips []HuaWeiAIChip)
 
 	// UpdateTelegraf update telegraf
 	UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *NpuCollector,
-		containerMap map[int32]container.DevicesInfo, chips []HuaWeiAIChip) map[string]map[string]interface{}
+		containerMap DeviceContainerMap, chips []HuaWeiAIChip) map[string]map[string]interface{}
 
 	// PreCollect pre handle before collect
 	PreCollect(*NpuCollector, []HuaWeiAIChip)
@@ -84,7 +87,7 @@ type MetricsCollector interface {
 type MetricsCollectorAdapter struct {
 	LocalCache   sync.Map
 	Is910Series  bool
-	ContainerMap map[int32]container.DevicesInfo
+	ContainerMap DeviceContainerMap
 	Chips        []HuaWeiAIChip
 }
 
@@ -98,12 +101,12 @@ func (c *MetricsCollectorAdapter) CollectToCache(n *NpuCollector, chipList []Hua
 
 // UpdatePrometheus update prometheus
 func (c *MetricsCollectorAdapter) UpdatePrometheus(ch chan<- prometheus.Metric, n *NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []HuaWeiAIChip) {
+	containerMap DeviceContainerMap, chips []HuaWeiAIChip) {
 }
 
 // UpdateTelegraf update telegraf
 func (c *MetricsCollectorAdapter) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap DeviceContainerMap, chips []HuaWeiAIChip) map[string]map[string]interface{} {
 	return fieldsMap
 }
 

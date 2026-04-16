@@ -25,7 +25,6 @@ import (
 	"ascend-common/devmanager/common"
 	"ascend-common/devmanager/hccn"
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 )
 
 const (
@@ -157,7 +156,7 @@ func (c *RoceCollector) CollectToCache(n *colcommon.NpuCollector, chipList []col
 
 // UpdatePrometheus update prometheus metrics
 func (c *RoceCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 
 	updateSingleChip := func(chipWithVnpu colcommon.HuaWeiAIChip, cache roceCache, cardLabel []string) {
 		statInfo := cache.extInfo
@@ -173,7 +172,7 @@ func (c *RoceCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcomm
 
 // UpdateTelegraf update telegraf metrics
 func (c *RoceCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 
 	caches := colcommon.GetInfoFromCache[roceCache](n, colcommon.GetCacheKey(c))
 	for _, chip := range chips {

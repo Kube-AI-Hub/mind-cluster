@@ -25,7 +25,6 @@ import (
 	"ascend-common/devmanager/common"
 
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 )
 
 var (
@@ -109,7 +108,7 @@ func (c *HbmCollector) CollectToCache(n *colcommon.NpuCollector, chipList []colc
 
 // UpdatePrometheus updates the prometheus metrics.
 func (c *HbmCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 
 	updateSingleChip := func(chipWithVnpu colcommon.HuaWeiAIChip, cache hbmCache, cardLabel []string) {
 		extInfo := cache.extInfo
@@ -130,7 +129,7 @@ func (c *HbmCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommo
 
 // UpdateTelegraf updates the telegraf metrics.
 func (c *HbmCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 	caches := colcommon.GetInfoFromCache[hbmCache](n, colcommon.GetCacheKey(c))
 	for _, chip := range chips {
 		cache, ok := caches[chip.PhyId]
@@ -205,7 +204,7 @@ func updateHbmEccInfo(ch chan<- prometheus.Metric, eccInfo *common.ECCInfo, time
 }
 
 func (c *HbmCollector) updateHbmInfo(ch chan<- prometheus.Metric, cache hbmCache, cardLabel []string,
-	containerMap map[int32]container.DevicesInfo, chipWithVnpu colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chipWithVnpu colcommon.HuaWeiAIChip) {
 	hbmInfo := cache.extInfo
 	if hbmInfo == nil || hbmInfo.HbmInfo == nil {
 		return
@@ -222,9 +221,12 @@ func (c *HbmCollector) updateHbmInfo(ch chan<- prometheus.Metric, cache hbmCache
 		return
 	}
 
-	containerNameArray := getContainerNameArray(geenContainerInfo(&chipWithVnpu, containerMap))
-	if c.Is910Series && len(containerNameArray) == colcommon.ContainerNameLen {
-		doUpdateMetric(ch, timestamp, hbmInfo.MemorySize, cardLabel, npuCtrTotalMemory)
-		doUpdateMetric(ch, timestamp, hbmInfo.Usage, cardLabel, npuCtrUsedMemory)
+	for _, containerInfo := range geenContainerInfos(&chipWithVnpu, containerMap) {
+		containerNameArray := getContainerNameArray(containerInfo)
+		if c.Is910Series && len(containerNameArray) == colcommon.ContainerNameLen {
+			containerCardLabel := getCardLabelForContainer(&chipWithVnpu, containerInfo)
+			doUpdateMetric(ch, timestamp, hbmInfo.MemorySize, containerCardLabel, npuCtrTotalMemory)
+			doUpdateMetric(ch, timestamp, hbmInfo.Usage, containerCardLabel, npuCtrUsedMemory)
+		}
 	}
 }

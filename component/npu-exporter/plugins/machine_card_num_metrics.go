@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils"
 	"huawei.com/npu-exporter/v6/utils/logger"
 )
@@ -31,7 +30,7 @@ var (
 )
 
 const (
-	machineInfoCardDescKey = "machineCardNum"
+	machineInfoCardDescKey   = "machineCardNum"
 	machineCardNumPluginName = "MachineCardNumPlugin"
 )
 
@@ -60,18 +59,18 @@ func (c *MachineCardNumPluginInfoCollector) CollectToCache(n *common.NpuCollecto
 
 // UpdatePrometheus update prometheus metric
 func (c *MachineCardNumPluginInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) {
-    // update machine_card_nums
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) {
+	// update machine_card_nums
 	machineInfoCardCache, ok := c.Cache.Load(machineInfoCardDescKey)
 	if ok {
 		value := float64(machineInfoCardCache.(int32))
 		ch <- prometheus.MustNewConstMetric(machineInfoCardDesc, prometheus.GaugeValue, value)
-	}	
+	}
 }
 
 // UpdateTelegraf update telegraf metric
 func (c *MachineCardNumPluginInfoCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *common.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap common.DeviceContainerMap, chips []common.HuaWeiAIChip) map[string]map[string]interface{} {
 	// update machine_card_nums
 	machineInfoCardCache, ok := c.Cache.Load(machineInfoCardDescKey)
 	if ok {

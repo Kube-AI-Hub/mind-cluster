@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils"
 	"huawei.com/npu-exporter/v6/utils/logger"
 )
@@ -91,7 +90,7 @@ func (n *CollectorForPrometheus) Collect(ch chan<- prometheus.Metric) {
 	collectChain(ch, n, containerMap, chips, common.ChainForCustomPlugin)
 }
 
-func collectChain(ch chan<- prometheus.Metric, n *CollectorForPrometheus, containerMap map[int32]container.DevicesInfo,
+func collectChain(ch chan<- prometheus.Metric, n *CollectorForPrometheus, containerMap common.DeviceContainerMap,
 	chips []common.HuaWeiAIChip, chain []common.MetricsCollector) {
 	if ch == nil {
 		logger.Error("ch is nil")

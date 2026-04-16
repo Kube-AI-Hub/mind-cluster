@@ -95,7 +95,7 @@ func TestVnpuCollectorUpdatePrometheus(t *testing.T) {
 		},
 		{name: "TestVnpuCollectorUpdatePrometheus_there is no container info",
 			preHandleFunc: func() {
-				containerMap = map[int32]container.DevicesInfo{}
+				containerMap = colcommon.DeviceContainerMap{}
 			},
 			expectValue: 0,
 		},
@@ -130,13 +130,13 @@ func TestVnpuCollectorUpdatePrometheus(t *testing.T) {
 	}
 }
 
-func mockContainerInfo() map[int32]container.DevicesInfo {
-	containerMap := map[int32]container.DevicesInfo{
-		validVnpuID: {
+func mockContainerInfo() colcommon.DeviceContainerMap {
+	containerMap := colcommon.DeviceContainerMap{
+		validVnpuID: []container.DevicesInfo{{
 			Devices: []int{0},
 			ID:      strconv.Itoa(validVnpuID),
 			Name:    "nsName_podName_ctrName",
-		},
+		}},
 	}
 	return containerMap
 }
@@ -158,7 +158,7 @@ func TestVnpuCollectorUpdateTelegraf(t *testing.T) {
 		convey.Convey("there is no container info", func() {
 			chip.VDevActivityInfo = nil
 			chipsWithVnpu := []colcommon.HuaWeiAIChip{chip}
-			containerMap = map[int32]container.DevicesInfo{}
+			containerMap = colcommon.DeviceContainerMap{}
 			newFieldMaps := collector.UpdateTelegraf(make(map[string]map[string]interface{}), n, containerMap, chipsWithVnpu)
 			convey.So(len(newFieldMaps), convey.ShouldEqual, 0)
 		})

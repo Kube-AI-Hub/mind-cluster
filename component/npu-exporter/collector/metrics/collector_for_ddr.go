@@ -25,7 +25,6 @@ import (
 	"ascend-common/devmanager/common"
 
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
-	"huawei.com/npu-exporter/v6/collector/container"
 	"huawei.com/npu-exporter/v6/utils/logger"
 )
 
@@ -86,7 +85,7 @@ func (c *DdrCollector) CollectToCache(n *colcommon.NpuCollector, chipList []colc
 
 // UpdatePrometheus update prometheus metrics
 func (c *DdrCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 
 	updateSingleChip := func(chipWithVnpu colcommon.HuaWeiAIChip, cache ddrCache, cardLabel []string) {
 		extInfo := cache.extInfo
@@ -105,10 +104,13 @@ func (c *DdrCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommo
 			return
 		}
 
-		containerNameArray := getContainerNameArray(geenContainerInfo(&chipWithVnpu, containerMap))
-		if !c.Is910Series && len(containerNameArray) == colcommon.ContainerNameLen {
-			doUpdateMetric(ch, cache.timestamp, memorySize, cardLabel, npuCtrTotalMemory)
-			doUpdateMetric(ch, cache.timestamp, memorySize-memoryAvailable, cardLabel, npuCtrUsedMemory)
+		for _, containerInfo := range geenContainerInfos(&chipWithVnpu, containerMap) {
+			containerNameArray := getContainerNameArray(containerInfo)
+			if !c.Is910Series && len(containerNameArray) == colcommon.ContainerNameLen {
+				containerCardLabel := getCardLabelForContainer(&chipWithVnpu, containerInfo)
+				doUpdateMetric(ch, cache.timestamp, memorySize, containerCardLabel, npuCtrTotalMemory)
+				doUpdateMetric(ch, cache.timestamp, memorySize-memoryAvailable, containerCardLabel, npuCtrUsedMemory)
+			}
 		}
 	}
 
@@ -117,7 +119,7 @@ func (c *DdrCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommo
 
 // UpdateTelegraf update telegraf metrics
 func (c *DdrCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 
 	caches := colcommon.GetInfoFromCache[ddrCache](n, colcommon.GetCacheKey(c))
 	for _, chip := range chips {

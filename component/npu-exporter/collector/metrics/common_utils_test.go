@@ -25,6 +25,7 @@ import (
 
 	"ascend-common/devmanager/common"
 	colcommon "huawei.com/npu-exporter/v6/collector/common"
+	"huawei.com/npu-exporter/v6/collector/container"
 )
 
 const (
@@ -162,4 +163,40 @@ func TestNilValidation(t *testing.T) {
 			convey.So(validateNotNilForEveryElement(val), convey.ShouldBeFalse)
 		})
 	})
+}
+
+func TestGeenGeneralCardLabelLeavesSharedDeviceLabelsEmpty(t *testing.T) {
+	chip := createChip()
+	containerMap := colcommon.DeviceContainerMap{
+		chip.DeviceID: []container.DevicesInfo{
+			{ID: "container-a", Name: "ns-a_pod-a_ctr-a", Devices: []int{int(chip.DeviceID)}},
+			{ID: "container-b", Name: "ns-b_pod-b_ctr-b", Devices: []int{int(chip.DeviceID)}},
+		},
+	}
+
+	cardLabel := geenGeneralCardLabel(&chip, containerMap)
+	if got, want := cardLabel[4], ""; got != want {
+		t.Fatalf("namespace label = %q, want %q", got, want)
+	}
+	if got, want := cardLabel[5], ""; got != want {
+		t.Fatalf("pod label = %q, want %q", got, want)
+	}
+	if got, want := cardLabel[6], ""; got != want {
+		t.Fatalf("container label = %q, want %q", got, want)
+	}
+}
+
+func TestBuildContainerInfoByIDDeduplicatesAcrossDevices(t *testing.T) {
+	containerMap := colcommon.DeviceContainerMap{
+		0: []container.DevicesInfo{{ID: "container-a", Name: "ns_pod_ctr-a", Devices: []int{0}}},
+		1: []container.DevicesInfo{{ID: "container-a", Name: "ns_pod_ctr-a", Devices: []int{1}}},
+	}
+
+	containerInfoByID := buildContainerInfoByID(containerMap)
+	if got, want := len(containerInfoByID), 1; got != want {
+		t.Fatalf("len(containerInfoByID) = %d, want %d", got, want)
+	}
+	if got, want := containerInfoByID["container-a"].Name, "ns_pod_ctr-a"; got != want {
+		t.Fatalf("container name = %q, want %q", got, want)
+	}
 }

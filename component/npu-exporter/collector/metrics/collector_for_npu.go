@@ -295,10 +295,10 @@ func collectPower(logicID int32, dmgr devmanager.DeviceInterface, chip *chipCach
 
 // UpdatePrometheus updates the base info of the chip
 func (c *BaseInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) {
 
 	updateSingleChip := func(chipWithVnpu colcommon.HuaWeiAIChip, cache chipCache, cardLabel []string) {
-		containerInfo := geenContainerInfo(&chipWithVnpu, containerMap)
+		containerInfos := geenContainerInfos(&chipWithVnpu, containerMap)
 		timestamp := cache.timestamp
 		doUpdateMetricWithValidateNum(ch, timestamp, float64(cache.Power), cardLabel, descPower)
 		doUpdateMetricWithValidateNum(ch, timestamp, float64(cache.Voltage), cardLabel, descVoltage)
@@ -315,9 +315,9 @@ func (c *BaseInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *col
 				cardLabel, descNetworkStatus)
 		}
 
-		updateContainerInfo(ch, containerInfo, cardLabel, &cache, chipWithVnpu)
+		updateContainerInfo(ch, containerInfos, &cache, chipWithVnpu)
 
-		updateProcessInfoForPrometheus(ch, &cache, containerInfo, timestamp, cardLabel)
+		updateProcessInfoForPrometheus(ch, &cache, timestamp, cardLabel, containerMap)
 		updateErrorCodesInfo(ch, &cache, timestamp, cardLabel)
 		// Update NPU serial number info
 		if cache.chip.ElabelInfo != nil {
@@ -333,23 +333,25 @@ func (c *BaseInfoCollector) UpdatePrometheus(ch chan<- prometheus.Metric, n *col
 	ch <- prometheus.MustNewConstMetric(machineInfoNPUDesc, prometheus.GaugeValue, float64(len(chips)))
 }
 
-func updateContainerInfo(ch chan<- prometheus.Metric, containerInfo container.DevicesInfo,
-	cardLabel []string, chip *chipCache, chipWithVnpu colcommon.HuaWeiAIChip) {
-	containerName := getContainerNameArray(containerInfo)
-	if len(containerName) != colcommon.ContainerNameLen {
-		return
-	}
-	// based on chipType , container_npu_total_memory、container_npu_used_memory reported in hbm or ddr group
-	doUpdateMetric(ch, chip.timestamp, 1, append(cardLabel, containerInfo.ID, strings.Join(containerName, "_")),
-		npuCtrInfo)
-
+func updateContainerInfo(ch chan<- prometheus.Metric, containerInfos []container.DevicesInfo,
+	chip *chipCache, chipWithVnpu colcommon.HuaWeiAIChip) {
 	// vnpu not support this metrics
 	vDevActivityInfo := chipWithVnpu.VDevActivityInfo
-	if vDevActivityInfo != nil && common.IsValidVDevID(vDevActivityInfo.VDevID) {
-		return
+	isValidVnpu := vDevActivityInfo != nil && common.IsValidVDevID(vDevActivityInfo.VDevID)
+	for _, containerInfo := range containerInfos {
+		containerName := getContainerNameArray(containerInfo)
+		if len(containerName) != colcommon.ContainerNameLen {
+			continue
+		}
+		cardLabel := getCardLabelForContainer(&chipWithVnpu, containerInfo)
+		// based on chipType , container_npu_total_memory、container_npu_used_memory reported in hbm or ddr group
+		doUpdateMetric(ch, chip.timestamp, 1, append(cardLabel, containerInfo.ID, strings.Join(containerName, "_")),
+			npuCtrInfo)
+		if isValidVnpu {
+			continue
+		}
+		doUpdateMetricWithValidateNum(ch, chip.timestamp, float64(chip.Utilization), cardLabel, npuCtrUtilization)
 	}
-
-	doUpdateMetricWithValidateNum(ch, chip.timestamp, float64(chip.Utilization), cardLabel, npuCtrUtilization)
 }
 
 func updateErrorCodesInfo(ch chan<- prometheus.Metric, chip *chipCache, timestamp time.Time, cardLabel []string) {
@@ -363,13 +365,13 @@ func updateErrorCodesInfo(ch chan<- prometheus.Metric, chip *chipCache, timestam
 }
 
 func updateProcessInfoForPrometheus(ch chan<- prometheus.Metric, chip *chipCache,
-	containerInfo container.DevicesInfo, timestamp time.Time, cardLabel []string) {
+	timestamp time.Time, cardLabel []string, containerMap colcommon.DeviceContainerMap) {
 	devProcessInfo := chip.DevProcessInfo
 	if devProcessInfo == nil {
 		return
 	}
 	doUpdateMetric(ch, timestamp, devProcessInfo.ProcNum, cardLabel, descDevProcessNum)
-
+	containerInfo := getSingleContainerInfo(&chip.chip, containerMap)
 	containerID := ""
 	containerName := ""
 	cNameArray := getContainerNameArray(containerInfo)
@@ -377,10 +379,8 @@ func updateProcessInfoForPrometheus(ch chan<- prometheus.Metric, chip *chipCache
 		containerID = containerInfo.ID
 		containerName = strings.Join(cNameArray, "_")
 	}
-
 	newCardLabel := make([]string, len(cardLabel))
 	copy(newCardLabel, cardLabel)
-	// containerName in process info is namespace_podName_containerName
 	newCardLabel[len(newCardLabel)-1] = containerName
 
 	if devProcessInfo.ProcNum == 0 {
@@ -397,7 +397,7 @@ func updateProcessInfoForPrometheus(ch chan<- prometheus.Metric, chip *chipCache
 
 // UpdateTelegraf updates the base info of the chip
 func (c *BaseInfoCollector) UpdateTelegraf(fieldsMap map[string]map[string]interface{}, n *colcommon.NpuCollector,
-	containerMap map[int32]container.DevicesInfo, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
+	containerMap colcommon.DeviceContainerMap, chips []colcommon.HuaWeiAIChip) map[string]map[string]interface{} {
 	caches := colcommon.GetInfoFromCache[chipCache](n, colcommon.GetCacheKey(c))
 	for _, chip := range chips {
 		cache, ok := caches[chip.PhyId]
